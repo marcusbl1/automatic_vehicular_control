@@ -367,10 +367,7 @@ class Main(Config):
                 c.setdefaults(n_workers=c.n_rollouts_per_step, use_ray=True)
                 c.n_rollouts_per_worker = c.n_rollouts_per_step // c.n_workers
                 import ray
-                try:
-                    ray.init(num_cpus=c.n_workers, include_dashboard=False)
-                except:
-                    ray.init(num_cpus=c.n_workers, include_dashboard=False, _temp_dir=(Path.env('F') / 'tmp')._real)
+                ray.init(num_cpus=c.n_workers, include_dashboard=False, _temp_dir='/tmp/')
                 RemoteMain = ray.remote(type(c))
                 worker_kwargs = c.get('worker_kwargs') or [{}] * c.n_workers
                 assert c.n_workers % len(worker_kwargs) == 0
