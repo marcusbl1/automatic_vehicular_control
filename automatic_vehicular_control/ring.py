@@ -156,8 +156,9 @@ class RingEnv(Env):
         if c.accel_penalty and hasattr(self, 'last_speed'):
             reward -= c.accel_penalty * np.abs(rl.speed - self.last_speed) / c.sim_step
         #add safety reward structure
-        lam = 1 # move to cf
-        reward += lam * ts.tc.vehicle.getParameter(id, "device.ssm.minTTC")
+        lam = 1 # move to cfg
+        veh = ts.tc.vehicle
+        reward += lam * veh.getParameter(veh.vehID, "device.ssm.minTTC")
         self.last_speed = rl.speed
 
         return obs.astype(np.float32), reward, False, None
