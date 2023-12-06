@@ -1,6 +1,7 @@
 from automatic_vehicular_control.exp import *
 from automatic_vehicular_control.env import *
 from automatic_vehicular_control.u import *
+import traci
 
 class RingEnv(Env):
     def def_sumo(self):
@@ -157,7 +158,7 @@ class RingEnv(Env):
             reward -= c.accel_penalty * np.abs(rl.speed - self.last_speed) / c.sim_step
         #add safety reward structure
         lam = 1 # move to cfg
-        reward += lam * ts.vehicle.getParameter(rl.id, "device.ssm.minTTC")
+        reward += lam * traci.vehicle.getParameter(rl.id, "device.ssm.minTTC")
 
         self.last_speed = rl.speed
 
