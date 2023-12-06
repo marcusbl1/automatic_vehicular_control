@@ -157,8 +157,8 @@ class RingEnv(Env):
             reward -= c.accel_penalty * np.abs(rl.speed - self.last_speed) / c.sim_step
         #add safety reward structure
         lam = 1 # move to cfg
-        reward += lam * rl.getParameter(rl.id, "device.ssm.minTTC")
-        
+        reward += lam * ts.vehicle.getParameter(rl.id, "device.ssm.minTTC")
+
         self.last_speed = rl.speed
 
         return obs.astype(np.float32), reward, False, None
