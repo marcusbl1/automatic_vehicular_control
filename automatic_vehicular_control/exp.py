@@ -214,6 +214,7 @@ class Main(Config):
         return rollout_stats
 
     def get_env_stats(c):
+        print('c._i', c._i, 'c._env.stats', c._env.stats)
         return c._env.stats
 
     def rollout(c):
@@ -314,7 +315,9 @@ class Main(Config):
             gd_stats = {}
             if len(rollouts.obs):
                 t_start = time()
+                breakpoint()
                 c._alg.optimize(rollouts)
+                breakpoint()
                 gd_stats.update(gd_time=time() - t_start)
             c.on_step_end(gd_stats)
             c._i += 1
@@ -343,6 +346,7 @@ class Main(Config):
         for _ in range(c.n_steps):
             c.rollouts()
             if c.get('result_save'):
+                print('RESULTS\n', c._results)
                 c._results.to_csv(c.result_save)
             if c.get('vehicle_info_save'):
                 np.savez_compressed(c.vehicle_info_save, **{k: v.values.astype(type(v.iloc[0])) for k, v in c._env.vehicle_info.iteritems()})
@@ -370,6 +374,7 @@ class Main(Config):
                 ray.init(num_cpus=c.n_workers, include_dashboard=False, _temp_dir='/tmp/')
                 RemoteMain = ray.remote(type(c))
                 worker_kwargs = c.get('worker_kwargs') or [{}] * c.n_workers
+                print('worker kwargs', worker_kwargs)
                 assert c.n_workers % len(worker_kwargs) == 0
                 c.log(f'Running {c.n_workers} with {len(worker_kwargs)} different worker kwargs')
                 n_repeats = c.n_workers // len(worker_kwargs)

@@ -31,6 +31,7 @@ def values_str_to_val(x):
         x[k] = str_to_val(v)
     return x
 
+#todo -- modify for setting ssm device
 class E(list):
     """
     Builder for lxml.etree.Element
@@ -360,7 +361,15 @@ def build_closed_route(edges, n_veh=0, av=0, space='random_free', type_fn=None, 
         veh_routes = lane_routes[veh_lane]
         veh_lane_idxs = lane_idxs[veh_lane]
         type_fn = type_fn or (lambda i: 'rl' if i < av else 'human')
+        #todo: update E method to include ssm device setting
         vehicles = [E('vehicle', id=f'{i}', type=type_fn(i), route=r, depart='0', departPos=p, departLane=l, departSpeed=depart_speed) for i, (r, p, l) in enumerate(zip(veh_routes, veh_lane_pos, veh_lane_idxs))]
+        # modify vehicle objects to add ssm device param
+        for i in range(len(vehicles)):
+            v = vehicles[i].to_element()
+            param_element = SubElement(v, "param")
+            param_element.set("key", "has.ssm.device")
+            param_element.set("value", "true")
+            vehicles[i] = E.from_element(v)
     return [*routes, rerouter, *vehicles]
 
 class SumoDef:
@@ -978,6 +987,8 @@ class TrafficState:
         try:
             self.tc.vehicle.add(veh_id, str(route.id), typeID=str(type.id),
                 departLane=str(lane_index), departPos=str(pos), departSpeed=str(speed))
+            print('setting ssm device')
+            self.tc.vehicle.setParameter(veh_id, 'has.ssm.device', 'true')
         except TraCIException as e:
             if patience == 0:
                 raise FatalTraCIError('Tried for 3 times to add vehicle but still got error: ' + str(e))
@@ -1121,6 +1132,9 @@ class Env:
         """
         ts = self.ts
         rl, human = ts.types.rl, ts.types.human
+
+        c = self.c
+
         self.rollout_info.append(
             id=ts.vehicles.keys(),
             speed=[veh.speed for veh in ts.vehicles],
@@ -1131,7 +1145,9 @@ class Env:
             collisions_human=len([veh for veh in ts.new_collided if veh.type is human]),
             inflow=len(ts.new_departed),
             outflow=len(ts.new_arrived),
-            backlog=sum(len(f.backlog) for f in ts.flows)
+            backlog=sum(len(f.backlog) for f in ts.flows),
+            ttc=c.ttc_rewards
+            # ttc=[float(self.tc.vehicle.getParameter(1, "device.ssm.minTTC").strip() or 0.0) for veh in ts.vehicles]
         )
 
     def extend_vehicle_info(self):
@@ -1165,6 +1181,7 @@ class Env:
         """
         c = self.c
         info = self.rollout_info[1 + c.warmup_steps + c.skip_stat_steps:] # + 1 is for the first step used to set up reset()
+        # print('info', info.keys())
         mean = lambda L: np.mean(L) if len(L) else np.nan
         std = lambda L: np.std(L) if len(L) else np.nan
         unique = np.unique(flatten(info.id))
@@ -1181,6 +1198,7 @@ class Env:
             collisions=sum(info.collisions),
             collisions_human=sum(info.collisions_human),
             fuel=sum(flatten(info.fuel)) / (len(unique) or np.nan),
+            ttc_mean=mean(flatten(info.ttc)),
         )
 
     @property

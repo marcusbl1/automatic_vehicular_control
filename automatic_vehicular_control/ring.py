@@ -103,6 +103,7 @@ class RingEnv(Env):
 
         super().step()
 
+        #todo?
         if len(ts.new_arrived | ts.new_collided):
             print('Detected collision')
             return c.observation_space.low, -c.collision_penalty, True, None
@@ -155,13 +156,27 @@ class RingEnv(Env):
         reward = np.mean([v.speed for v in (ts.vehicles if c.global_reward else rl_type.vehicles)])
         if c.accel_penalty and hasattr(self, 'last_speed'):
             reward -= c.accel_penalty * np.abs(rl.speed - self.last_speed) / c.sim_step
-        #add safety reward structure
-        lam = 1 # move to cfg
-        reward += lam * self.tc.vehicle.getParameter(rl.id, "device.ssm.minTTC")
 
         self.last_speed = rl.speed
 
+        #add safety reward structure
+        
+
+        # if c._i %5 ==0:
+        #     print(f'len c.ttc_rewards at step {c._i}', len(c.ttc_rewards))
+
+        # if not c.beta == 0: # if beta is 0, don't need to do this, just keep original rewards
+        ttc = self.get_safety_reward(rl.id)
+        c.ttc_rewards += [ttc]
+        reward = (1-c.beta)*reward + c.beta*ttc
+
         return obs.astype(np.float32), reward, False, None
+
+    def get_safety_reward(self, id):
+        ssm_ttc = self.tc.vehicle.getParameter(id, "device.ssm.minTTC")
+        # ttc = np.asarray(ssm_ttc, dtype='float')
+        ttc = float(ssm_ttc.strip() or 0.0)
+        return ttc
 
 class Ring(Main):
     def create_env(c):
@@ -232,6 +247,11 @@ if __name__ == '__main__':
         step_save=None,
 
         render=False,
+
+        beta=0,
+        # s_rewards=[],   #safety
+        # p_rewards=[],   #performance
+        ttc_rewards = []
     )
     if c.n_lanes == 1:
         c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature)
@@ -243,3 +263,5 @@ if __name__ == '__main__':
     c.step_save = c.step_save or min(5, c.n_steps // 10)
     c.redef_sumo = bool(c.circumference_range)
     c.run()
+
+    #todo save s_rewards, p_rewards into a file for ipynb to graph
