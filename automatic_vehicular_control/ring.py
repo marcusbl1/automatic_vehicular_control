@@ -166,9 +166,9 @@ class RingEnv(Env):
         #     print(f'len c.ttc_rewards at step {c._i}', len(c.ttc_rewards))
 
         # if not c.beta == 0: # if beta is 0, don't need to do this, just keep original rewards
-        ttc = self.get_safety_reward(rl.id)
-        c.ttc_rewards += [ttc]
-        reward = (1-c.beta)*reward + c.beta*ttc
+        # ttc = self.get_safety_reward(rl.id)
+        # c.ttc_rewards += [ttc]
+        # reward = (1-c.beta)*reward + c.beta*ttc
 
         return obs.astype(np.float32), reward, False, None
 

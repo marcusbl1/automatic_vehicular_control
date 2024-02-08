@@ -315,9 +315,7 @@ class Main(Config):
             gd_stats = {}
             if len(rollouts.obs):
                 t_start = time()
-                breakpoint()
                 c._alg.optimize(rollouts)
-                breakpoint()
                 gd_stats.update(gd_time=time() - t_start)
             c.on_step_end(gd_stats)
             c._i += 1

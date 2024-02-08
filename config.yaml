@@ -1,0 +1,16 @@
+alg: TRPO
+beta: 1
+gamma: 0.9995
+global_reward: true
+horizon: 2000
+n_rollouts_per_step: 10
+n_steps: 100
+n_workers: 10
+save_agent: true
+skip_stat_steps: 2000
+tb: true
+use_critic: false
+warmup_steps: 500
+wb: false
+worker_kwargs:
+- circumference: 250

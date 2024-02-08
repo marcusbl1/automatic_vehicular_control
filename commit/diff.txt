@@ -1,0 +1,61 @@
+diff --git a/automatic_vehicular_control/env.py b/automatic_vehicular_control/env.py
+index 65a159d..9a9ea08 100644
+--- a/automatic_vehicular_control/env.py
++++ b/automatic_vehicular_control/env.py
+@@ -366,9 +366,9 @@ def build_closed_route(edges, n_veh=0, av=0, space='random_free', type_fn=None,
+         # modify vehicle objects to add ssm device param
+         for i in range(len(vehicles)):
+             v = vehicles[i].to_element()
+-            param_element = SubElement(v, "param")
+-            param_element.set("key", "has.ssm.device")
+-            param_element.set("value", "true")
++            # param_element = SubElement(v, "param")
++            # param_element.set("key", "has.ssm.device")
++            # param_element.set("value", "true")
+             vehicles[i] = E.from_element(v)
+     return [*routes, rerouter, *vehicles]
+ 
+diff --git a/automatic_vehicular_control/exp.py b/automatic_vehicular_control/exp.py
+index e570072..3c59b3d 100644
+--- a/automatic_vehicular_control/exp.py
++++ b/automatic_vehicular_control/exp.py
+@@ -315,9 +315,7 @@ class Main(Config):
+             gd_stats = {}
+             if len(rollouts.obs):
+                 t_start = time()
+-                breakpoint()
+                 c._alg.optimize(rollouts)
+-                breakpoint()
+                 gd_stats.update(gd_time=time() - t_start)
+             c.on_step_end(gd_stats)
+             c._i += 1
+diff --git a/automatic_vehicular_control/ring.py b/automatic_vehicular_control/ring.py
+index d26a2d9..dd84576 100644
+--- a/automatic_vehicular_control/ring.py
++++ b/automatic_vehicular_control/ring.py
+@@ -166,9 +166,9 @@ class RingEnv(Env):
+         #     print(f'len c.ttc_rewards at step {c._i}', len(c.ttc_rewards))
+ 
+         # if not c.beta == 0: # if beta is 0, don't need to do this, just keep original rewards
+-        ttc = self.get_safety_reward(rl.id)
+-        c.ttc_rewards += [ttc]
+-        reward = (1-c.beta)*reward + c.beta*ttc
++        # ttc = self.get_safety_reward(rl.id)
++        # c.ttc_rewards += [ttc]
++        # reward = (1-c.beta)*reward + c.beta*ttc
+ 
+         return obs.astype(np.float32), reward, False, None
+ 
+diff --git a/setup.py b/setup.py
+index 9afc592..d8334d0 100644
+--- a/setup.py
++++ b/setup.py
+@@ -13,7 +13,7 @@ setuptools.setup(
+     long_description=long_description,
+     long_description_content_type="text/markdown",
+     url="https://github.com/mit-wu-lab/automatic_vehicular_control",
+-    packages=setuptools.find_packages(),
++    packages=['automatic_vehicular_control'],
+     classifiers=[
+         "Programming Language :: Python :: 3",
+         "License :: OSI Approved :: MIT License",
