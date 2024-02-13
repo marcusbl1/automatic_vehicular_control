@@ -13,7 +13,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/mit-wu-lab/automatic_vehicular_control",
-    packages=setuptools.find_packages(),
+    # packages=setuptools.find_packages(),
+    packages=['automatic_vehicular_control'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

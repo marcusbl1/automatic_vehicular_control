@@ -1120,6 +1120,7 @@ class Env:
         Save simulation statistics at the current step
         """
         ts = self.ts
+        c = self.c
         rl, human = ts.types.rl, ts.types.human
         self.rollout_info.append(
             id=ts.vehicles.keys(),
@@ -1131,7 +1132,8 @@ class Env:
             collisions_human=len([veh for veh in ts.new_collided if veh.type is human]),
             inflow=len(ts.new_departed),
             outflow=len(ts.new_arrived),
-            backlog=sum(len(f.backlog) for f in ts.flows)
+            backlog=sum(len(f.backlog) for f in ts.flows),
+            ttc=c.ttc_rewards
         )
 
     def extend_vehicle_info(self):
@@ -1181,6 +1183,7 @@ class Env:
             collisions=sum(info.collisions),
             collisions_human=sum(info.collisions_human),
             fuel=sum(flatten(info.fuel)) / (len(unique) or np.nan),
+            ttc_min=min(flatten(info.ttc)),
         )
 
     @property

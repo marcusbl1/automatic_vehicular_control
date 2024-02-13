@@ -157,7 +157,25 @@ class RingEnv(Env):
             reward -= c.accel_penalty * np.abs(rl.speed - self.last_speed) / c.sim_step
         self.last_speed = rl.speed
 
+        ttc = self.calc_ttc()
+        c.ttc_rewards += [ttc]
+        reward = (1-c.beta)*reward + c.beta*ttc
+
         return obs.astype(np.float32), reward, False, None
+    
+    def calc_ttc(self):
+        cur_veh_list = self.ts.vehicles
+        ttcs = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed + 1e-31 # account for if 0 speed
+            leader_speed = leader.speed + 1e-31
+            if leader_speed < v_speed:
+                ttc = max(5, headway/v_speed) # max ttc hardcoded 5
+            else:
+                ttc = 5
+            ttcs.append(ttc)
+        return np.mean(np.array(ttcs))
 
 class Ring(Main):
     def create_env(c):
@@ -228,6 +246,9 @@ if __name__ == '__main__':
         step_save=None,
 
         render=False,
+
+        beta=0,
+        ttc_rewards = []
     )
     if c.n_lanes == 1:
         c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature)
