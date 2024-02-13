@@ -167,15 +167,36 @@ class RingEnv(Env):
 
         # if not c.beta == 0: # if beta is 0, don't need to do this, just keep original rewards
         # ttc = self.get_safety_reward(rl.id)
-        # c.ttc_rewards += [ttc]
-        # reward = (1-c.beta)*reward + c.beta*ttc
+
+        
+        ttc = self.calc_ttc()
+        c.ttc_rewards += [ttc]
+        reward = (1-c.beta)*reward + c.beta*ttc
 
         return obs.astype(np.float32), reward, False, None
+    
+
+    # calculate ttc:
+    # need list of vehicles currently in simulation ts.vehicles?
+    # for every veh, call .leader()
+    def calc_ttc(self):
+        cur_veh_list = self.ts.vehicles
+        ttcs = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed + 1e-31 # account for if 0 speed
+            leader_speed = leader.speed + 1e-31
+            if leader_speed < v_speed:
+                ttc = max(5, headway/v_speed) # max ttc hardcoded 5
+            else:
+                ttc = 5
+            ttcs.append(ttc)
+        return np.mean(np.array(ttcs))
 
     def get_safety_reward(self, id):
         ssm_ttc = self.tc.vehicle.getParameter(id, "device.ssm.minTTC")
         # ttc = np.asarray(ssm_ttc, dtype='float')
-        ttc = float(ssm_ttc.strip() or 0.0)
+        ttc = float(ssm_ttc.strip() or float('inf'))
         return ttc
 
 class Ring(Main):

@@ -366,9 +366,9 @@ def build_closed_route(edges, n_veh=0, av=0, space='random_free', type_fn=None, 
         # modify vehicle objects to add ssm device param
         for i in range(len(vehicles)):
             v = vehicles[i].to_element()
-            # param_element = SubElement(v, "param")
-            # param_element.set("key", "has.ssm.device")
-            # param_element.set("value", "true")
+            param_element = SubElement(v, "param")
+            param_element.set("key", "has.ssm.device")
+            param_element.set("value", "true")
             vehicles[i] = E.from_element(v)
     return [*routes, rerouter, *vehicles]
 
@@ -1198,6 +1198,7 @@ class Env:
             collisions=sum(info.collisions),
             collisions_human=sum(info.collisions_human),
             fuel=sum(flatten(info.fuel)) / (len(unique) or np.nan),
+            ttc_min=min(flatten(info.ttc)),
             ttc_mean=mean(flatten(info.ttc)),
         )
 
