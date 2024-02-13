@@ -159,26 +159,12 @@ class RingEnv(Env):
 
         self.last_speed = rl.speed
 
-        #add safety reward structure
-        
-
-        # if c._i %5 ==0:
-        #     print(f'len c.ttc_rewards at step {c._i}', len(c.ttc_rewards))
-
-        # if not c.beta == 0: # if beta is 0, don't need to do this, just keep original rewards
-        # ttc = self.get_safety_reward(rl.id)
-
-        
         ttc = self.calc_ttc()
         c.ttc_rewards += [ttc]
         reward = (1-c.beta)*reward + c.beta*ttc
 
         return obs.astype(np.float32), reward, False, None
     
-
-    # calculate ttc:
-    # need list of vehicles currently in simulation ts.vehicles?
-    # for every veh, call .leader()
     def calc_ttc(self):
         cur_veh_list = self.ts.vehicles
         ttcs = []
@@ -192,12 +178,6 @@ class RingEnv(Env):
                 ttc = 5
             ttcs.append(ttc)
         return np.mean(np.array(ttcs))
-
-    def get_safety_reward(self, id):
-        ssm_ttc = self.tc.vehicle.getParameter(id, "device.ssm.minTTC")
-        # ttc = np.asarray(ssm_ttc, dtype='float')
-        ttc = float(ssm_ttc.strip() or float('inf'))
-        return ttc
 
 class Ring(Main):
     def create_env(c):
@@ -270,8 +250,6 @@ if __name__ == '__main__':
         render=False,
 
         beta=0,
-        # s_rewards=[],   #safety
-        # p_rewards=[],   #performance
         ttc_rewards = []
     )
     if c.n_lanes == 1:

@@ -1131,6 +1131,7 @@ class Env:
         Save simulation statistics at the current step
         """
         ts = self.ts
+        c = self.c
         rl, human = ts.types.rl, ts.types.human
 
         c = self.c
@@ -1147,7 +1148,6 @@ class Env:
             outflow=len(ts.new_arrived),
             backlog=sum(len(f.backlog) for f in ts.flows),
             ttc=c.ttc_rewards
-            # ttc=[float(self.tc.vehicle.getParameter(1, "device.ssm.minTTC").strip() or 0.0) for veh in ts.vehicles]
         )
 
     def extend_vehicle_info(self):
@@ -1199,7 +1199,6 @@ class Env:
             collisions_human=sum(info.collisions_human),
             fuel=sum(flatten(info.fuel)) / (len(unique) or np.nan),
             ttc_min=min(flatten(info.ttc)),
-            ttc_mean=mean(flatten(info.ttc)),
         )
 
     @property
