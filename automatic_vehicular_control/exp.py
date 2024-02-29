@@ -127,6 +127,8 @@ class Main(Config):
         c.set_model()
         c._model.eval()
         c._i = 0
+        # print('ttc reset')
+        c.ttcs=[]
 
     def set_weights(c, weights): # For Ray
         c._model.load_state_dict(weights, strict=False) # If c.use_critic, worker may not have critic weights
@@ -134,6 +136,8 @@ class Main(Config):
     def on_train_start(c):
         c.setdefaults(alg='Algorithm')
         c._env = c.create_env()
+        # print('ttc reset exp 139')
+        c.ttcs=[]
 
         c._alg = (eval(c.alg) if isinstance(c.alg, str) else c.alg)(c)
         c.set_model()
@@ -176,6 +180,8 @@ class Main(Config):
         c._writer_buffer = NamedArrays()
 
     def on_step_start(c, stats={}):
+        # print('ttc reset exp 183')
+        c.ttcs=[]
         lr = c._lr
         for g in c._opt.param_groups:
             g['lr'] = float(lr)
@@ -194,6 +200,15 @@ class Main(Config):
             rollout_stats = flatten(ray.get([w.rollouts_single_process.remote() for w in c._rollout_workers]))
         else:
             rollout_stats = c.rollouts_single_process()
+        # print(rollout_stats[0][2][0])
+        # ttcs = [x[2] for x in rollout_stats]
+        c.ttcs += [x[2] for x in rollout_stats]
+        mean = lambda L: np.mean(L) if len(L) else np.nan
+        std = lambda L: np.std(L) if len(L) else np.nan
+        print('ttc mean', mean(c.ttcs))
+        print('ttc_std', std(c.ttcs))
+        # print('exp202', len(c.ttcs))
+        rollout_stats = [x[:-1] for x in rollout_stats]
         rollouts = [c.on_rollout_end(*rollout_stat, ii=ii) for ii, rollout_stat in enumerate(rollout_stats)]
         c.flush_writer_buffer()
         return NamedArrays.concat(rollouts, fn=flatten)
@@ -201,6 +216,7 @@ class Main(Config):
     def rollouts_single_process(c):
         if c.n_rollouts_per_worker > 1:
             rollout_stats = [c.var(i_rollout=i).rollout() for i in range(c.n_rollouts_per_worker)]
+            # may have to update this if to correspond with ttc edits in else
         else:
             n_steps_total = 0
             rollout_stats = []
@@ -208,8 +224,8 @@ class Main(Config):
                 if c.get('full_rollout_only'):
                     n_steps_total = 0
                     rollout_stats = []
-                rollout, stats = c.rollout()
-                rollout_stats.append((rollout, stats))
+                rollout, stats, ttcs = c.rollout()
+                rollout_stats.append((rollout, stats, ttcs))
                 n_steps_total += stats.get('horizon') or len(stats.get('reward', []))
         return rollout_stats
 
@@ -231,6 +247,7 @@ class Main(Config):
         done = False
         a_space = c.action_space
         step = 0
+        ttcs = []
         while step < c.horizon + c.skip_stat_steps and not done:
             pred = from_torch(c._model(to_torch(rollout.obs[-1]), value=False, policy=True, argmax=False))
             if c.get('aclip', True) and isinstance(a_space, Box):
@@ -239,7 +256,8 @@ class Main(Config):
 
             ret = c._env.step(rollout.action[-1])
             if isinstance(ret, tuple):
-                obs, reward, done, info = ret
+                obs, reward, done, info, ttc = ret
+                ttcs += [ttc]
                 ret = dict(obs=obs, reward=reward, done=done, info=info)
             done = ret.setdefault('done', False)
             if done:
@@ -247,7 +265,8 @@ class Main(Config):
             rollout.append(**ret)
             step += 1
         stats = dict(rollout_time=time() - t_start, **c.get_env_stats())
-        return rollout, stats
+        # print('exp 264', len(ttcs))
+        return rollout, stats, ttcs
 
     def on_rollout_end(c, rollout, stats, ii=None):
         """ Compute value, calculate advantage, log stats """
@@ -307,6 +326,8 @@ class Main(Config):
 
     def train(c):
         c.on_train_start()
+        # initialize some ttc object or whatever in c so rollouts can edit it, then env stats can access c ttc object
+        c.ttcs=[]
         while c._i < c.n_steps:
             c.on_step_start()
             with torch.no_grad():

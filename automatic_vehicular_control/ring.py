@@ -157,25 +157,69 @@ class RingEnv(Env):
             reward -= c.accel_penalty * np.abs(rl.speed - self.last_speed) / c.sim_step
         self.last_speed = rl.speed
 
-        ttc = self.calc_ttc()
-        c.ttc_rewards += [ttc]
-        reward = (1-c.beta)*reward + c.beta*ttc
 
-        return obs.astype(np.float32), reward, False, None
-    
+        # how to normalize?
+        # how to add stat to train_results.csv
+
+        speed_reward=reward
+        ttc = self.calc_ttc()
+
+        # self.rollout_info.append(ttc=ttc)
+        # print(self.rollout_info.keys(), type(self.rollout_info.reward))
+        # print(ttc, self.rollout_info.keys(), type(self.rollout_info['ttc'][0]), type(self.rollout_info['speed'][0]), type(self.rollout_info['speed'][0][0]))
+        # need to normalize ttc
+        reward = (1-c.beta)*reward/max_speed + c.beta*ttc
+        # return dict(obs=obs, reward=reward, ttc=ttc, speed_reward=speed_reward) # use just dict  here, other envs use this so rollout takes care of it (may have to make ring version of on_rollout_end??)
+        return obs.astype(np.float32), reward, False, None, ttc
+
     def calc_ttc(self):
         cur_veh_list = self.ts.vehicles
         ttcs = []
         for v in cur_veh_list:
             leader, headway = v.leader()
-            v_speed = v.speed + 1e-31 # account for if 0 speed
-            leader_speed = leader.speed + 1e-31
+            v_speed = v.speed
+            leader_speed = leader.speed
             if leader_speed < v_speed:
-                ttc = max(5, headway/v_speed) # max ttc hardcoded 5
+                ttc =  headway/(v_speed-leader_speed)
             else:
-                ttc = 5
+                ttc = np.nan
             ttcs.append(ttc)
-        return np.mean(np.array(ttcs))
+        fleet_ttc = np.nanmean(np.array(ttcs))
+        return fleet_ttc if not np.isnan(fleet_ttc) else 100 # arbitrarily set big ttc
+    
+    # def calc_ttc(self):
+    #     cur_veh_list = self.ts.vehicles
+    #     ttcs = []
+    #     for v in cur_veh_list:
+    #         leader, headway = v.leader()
+    #         v_speed = v.speed + 1e-31 # account for if 0 speed
+    #         leader_speed = leader.speed + 1e-31
+    #         if leader_speed < v_speed:
+    #             ttc = min(7.75e17, headway/(v_speed-leader_speed))/945212408460.721 # max ttc hardcoded 5
+    #             # print('ttc valid: calculated as ', headway/(v_speed-leader_speed), "returned as", ttc)
+    #         else:
+    #             ttc = 7.75e17/945212408460.721
+    #             # print('ttc invalid', ttc)
+    #         ttcs.append(ttc)
+    #     return np.mean(np.array(ttcs))
+
+
+
+    # def append_step_info(self):
+    #     super().append_step_info()
+    #     self.rollout_info.append(n_veh_network=len(self.ts.vehicles))
+
+    # @property
+    # def stats(self):
+    #     c = self.c
+    #     info = self.rollout_info[1 + c.warmup_steps + c.skip_stat_steps:]
+    #     mean = lambda L: np.mean(L) if len(L) else np.nan
+    #     std = lambda L: np.std(L) if len(L) else np.nan
+    #     stats = {**super().stats}
+    #     stats['ttc_mean'] = mean(info['ttc'])
+    #     print('ring')
+    #     stats['ttc_std'] = std(info['ttc'])
+    #     return stats
 
 class Ring(Main):
     def create_env(c):
@@ -248,7 +292,7 @@ if __name__ == '__main__':
         render=False,
 
         beta=0,
-        ttc_rewards = []
+        ttcs=[],
     )
     if c.n_lanes == 1:
         c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature)

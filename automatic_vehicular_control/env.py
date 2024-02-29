@@ -1120,7 +1120,7 @@ class Env:
         Save simulation statistics at the current step
         """
         ts = self.ts
-        c = self.c
+        # c = self.c
         rl, human = ts.types.rl, ts.types.human
         self.rollout_info.append(
             id=ts.vehicles.keys(),
@@ -1133,7 +1133,6 @@ class Env:
             inflow=len(ts.new_departed),
             outflow=len(ts.new_arrived),
             backlog=sum(len(f.backlog) for f in ts.flows),
-            ttc=c.ttc_rewards
         )
 
     def extend_vehicle_info(self):
@@ -1170,6 +1169,7 @@ class Env:
         mean = lambda L: np.mean(L) if len(L) else np.nan
         std = lambda L: np.std(L) if len(L) else np.nan
         unique = np.unique(flatten(info.id))
+        # print('env 1172', len(c.ttcs))
         return Namespace(
             horizon=len(info),
             speed=mean(flatten(info.speed)),
@@ -1183,7 +1183,8 @@ class Env:
             collisions=sum(info.collisions),
             collisions_human=sum(info.collisions_human),
             fuel=sum(flatten(info.fuel)) / (len(unique) or np.nan),
-            ttc_min=min(flatten(info.ttc)),
+            ttc_mean=mean(flatten(c.ttcs)),
+            ttc_std=std(flatten(c.ttcs)),
         )
 
     @property
@@ -1242,15 +1243,17 @@ class NormEnv(gym.Env):
     def step(self, action=None):
         ret = self.env.step(action)
         if isinstance(ret, tuple):
-            obs, reward, done, info = ret
+            obs, reward, done, info, ttc = ret
             norm_obs = self.norm_obs(obs)
             norm_rew = self.norm_reward(reward)
-            return norm_obs, norm_rew, done, reward
+            return norm_obs, norm_rew, done, reward, ttc
         else:
             if 'obs' in ret:
                 ret['obs'] = self.norm_obs(ret['obs'])
             ret['raw_reward'] = ret['reward']
             ret['reward'] = self.norm_reward(ret['reward'])
+            # ret['ttc'] = self.norm_reward(ret['ttc'])
+            # print('env step ttc norm')
             return ret
 
     def __getattr__(self, attr):
