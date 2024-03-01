@@ -169,8 +169,8 @@ class RingEnv(Env):
         # print(ttc, self.rollout_info.keys(), type(self.rollout_info['ttc'][0]), type(self.rollout_info['speed'][0]), type(self.rollout_info['speed'][0][0]))
         # need to normalize ttc
         reward = (1-c.beta)*reward/max_speed + c.beta*ttc
-        # return dict(obs=obs, reward=reward, ttc=ttc, speed_reward=speed_reward) # use just dict  here, other envs use this so rollout takes care of it (may have to make ring version of on_rollout_end??)
-        return obs.astype(np.float32), reward, False, None, ttc
+        return dict(obs=obs, reward=reward, ttc=ttc, speed_reward=speed_reward) # use just dict here, other envs use this so rollout takes care of it (may have to make ring version of on_rollout_end??)
+        # return obs.astype(np.float32), reward, False, None, ttc
 
     def calc_ttc(self):
         cur_veh_list = self.ts.vehicles

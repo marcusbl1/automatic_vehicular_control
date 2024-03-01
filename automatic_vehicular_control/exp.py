@@ -202,13 +202,13 @@ class Main(Config):
             rollout_stats = c.rollouts_single_process()
         # print(rollout_stats[0][2][0])
         # ttcs = [x[2] for x in rollout_stats]
-        c.ttcs += [x[2] for x in rollout_stats]
-        mean = lambda L: np.mean(L) if len(L) else np.nan
-        std = lambda L: np.std(L) if len(L) else np.nan
-        print('ttc mean', mean(c.ttcs))
-        print('ttc_std', std(c.ttcs))
+        # c.ttcs += [x[2] for x in rollout_stats]
+        # mean = lambda L: np.mean(L) if len(L) else np.nan
+        # std = lambda L: np.std(L) if len(L) else np.nan
+        # print('ttc mean', mean(c.ttcs))
+        # print('ttc_std', std(c.ttcs))
         # print('exp202', len(c.ttcs))
-        rollout_stats = [x[:-1] for x in rollout_stats]
+        # rollout_stats = [x[:-1] for x in rollout_stats]
         rollouts = [c.on_rollout_end(*rollout_stat, ii=ii) for ii, rollout_stat in enumerate(rollout_stats)]
         c.flush_writer_buffer()
         return NamedArrays.concat(rollouts, fn=flatten)
@@ -224,13 +224,14 @@ class Main(Config):
                 if c.get('full_rollout_only'):
                     n_steps_total = 0
                     rollout_stats = []
-                rollout, stats, ttcs = c.rollout()
-                rollout_stats.append((rollout, stats, ttcs))
+                # rollout, stats, ttcs = c.rollout()
+                rollout, stats = c.rollout()
+                rollout_stats.append((rollout, stats))
                 n_steps_total += stats.get('horizon') or len(stats.get('reward', []))
         return rollout_stats
 
     def get_env_stats(c):
-        return c._env.stats
+        return c._env.stats # returns env stats() func
 
     def rollout(c):
         c.setdefaults(skip_stat_steps=0, i_rollout=0, rollout_kwargs=None)
@@ -247,17 +248,19 @@ class Main(Config):
         done = False
         a_space = c.action_space
         step = 0
-        ttcs = []
+        # ttcs = []
         while step < c.horizon + c.skip_stat_steps and not done:
-            pred = from_torch(c._model(to_torch(rollout.obs[-1]), value=False, policy=True, argmax=False))
+            # pred = from_torch(c._model(to_torch(rollout.obs[-1]), value=False, policy=True, argmax=False))
+            pred = from_torch(c._model(to_torch(rollout.obs[-1].astype(np.float32)), value=False, policy=True, argmax=False))
             if c.get('aclip', True) and isinstance(a_space, Box):
                 pred.action = np.clip(pred.action, a_space.low, a_space.high)
             rollout.append(**pred)
 
             ret = c._env.step(rollout.action[-1])
             if isinstance(ret, tuple):
-                obs, reward, done, info, ttc = ret
-                ttcs += [ttc]
+                obs, reward, done, info = ret
+                # obs, reward, done, info, ttc = ret
+                # ttcs += [ttc]
                 ret = dict(obs=obs, reward=reward, done=done, info=info)
             done = ret.setdefault('done', False)
             if done:
@@ -266,7 +269,8 @@ class Main(Config):
             step += 1
         stats = dict(rollout_time=time() - t_start, **c.get_env_stats())
         # print('exp 264', len(ttcs))
-        return rollout, stats, ttcs
+        # return rollout, stats, ttcs
+        return rollout, stats
 
     def on_rollout_end(c, rollout, stats, ii=None):
         """ Compute value, calculate advantage, log stats """
@@ -302,6 +306,7 @@ class Main(Config):
         log(**stats)
         log(
             reward_mean=np.mean(reward),
+            ttc_mean=np.mean(rollout.ttc),
             value_mean=np.mean(value_) if c.use_critic else None,
             ret_mean=np.mean(ret),
             adv_mean=np.mean(adv) if c.use_critic else None,
@@ -326,15 +331,23 @@ class Main(Config):
 
     def train(c):
         c.on_train_start()
+        print('on_train_start exp 332')
         # initialize some ttc object or whatever in c so rollouts can edit it, then env stats can access c ttc object
         c.ttcs=[]
         while c._i < c.n_steps:
             c.on_step_start()
+            print('on_step_start exp 337')
             with torch.no_grad():
                 rollouts = c.rollouts()
+                print('exp338 rollouts type', type(rollouts))
             gd_stats = {}
             if len(rollouts.obs):
                 t_start = time()
+                rollouts['policy'] = [x.astype(float) for x in rollouts['policy']]
+                rollouts['action'] = [x.astype(float) for x in rollouts['action']]
+                print(rollouts.keys())
+                print(rollouts['obs'][0].dtype, rollouts['policy'][0].dtype, rollouts['action'][0].dtype)
+                print([type(rollouts[key][0]) for key in rollouts.keys()])
                 c._alg.optimize(rollouts)
                 gd_stats.update(gd_time=time() - t_start)
             c.on_step_end(gd_stats)
