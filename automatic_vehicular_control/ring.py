@@ -168,7 +168,8 @@ class RingEnv(Env):
         # print(self.rollout_info.keys(), type(self.rollout_info.reward))
         # print(ttc, self.rollout_info.keys(), type(self.rollout_info['ttc'][0]), type(self.rollout_info['speed'][0]), type(self.rollout_info['speed'][0][0]))
         # need to normalize ttc
-        reward = (1-c.beta)*reward/max_speed + c.beta*ttc
+        reward = (1-c.beta)*reward/max_speed + c.beta*ttc/7
+        # reward = ttc/7
         # return dict(obs=obs, reward=reward, ttc=ttc, speed_reward=speed_reward) # use just dict  here, other envs use this so rollout takes care of it (may have to make ring version of on_rollout_end??)
         return obs.astype(np.float32), reward, False, None, ttc
 
@@ -181,11 +182,13 @@ class RingEnv(Env):
             leader_speed = leader.speed
             if leader_speed < v_speed:
                 ttc =  headway/(v_speed-leader_speed)
+                # print('if184')
             else:
                 ttc = np.nan
+                # print('else187')
             ttcs.append(ttc)
         fleet_ttc = np.nanmean(np.array(ttcs))
-        return fleet_ttc if not np.isnan(fleet_ttc) else 100 # arbitrarily set big ttc
+        return np.log10(fleet_ttc) if not np.isnan(fleet_ttc) else 7 # arbitrarily set big ttc
     
     # def calc_ttc(self):
     #     cur_veh_list = self.ts.vehicles
