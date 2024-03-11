@@ -1120,7 +1120,6 @@ class Env:
         Save simulation statistics at the current step
         """
         ts = self.ts
-        # c = self.c
         rl, human = ts.types.rl, ts.types.human
         self.rollout_info.append(
             id=ts.vehicles.keys(),
@@ -1133,7 +1132,6 @@ class Env:
             inflow=len(ts.new_departed),
             outflow=len(ts.new_arrived),
             backlog=sum(len(f.backlog) for f in ts.flows),
-            ttc=[6],
         )
 
     def extend_vehicle_info(self):
@@ -1170,7 +1168,6 @@ class Env:
         mean = lambda L: np.mean(L) if len(L) else np.nan
         std = lambda L: np.std(L) if len(L) else np.nan
         unique = np.unique(flatten(info.id))
-        print('env 1172', info.keys())
         return Namespace(
             horizon=len(info),
             speed=mean(flatten(info.speed)),
@@ -1184,8 +1181,6 @@ class Env:
             collisions=sum(info.collisions),
             collisions_human=sum(info.collisions_human),
             fuel=sum(flatten(info.fuel)) / (len(unique) or np.nan),
-            ttc_mean=mean(flatten(info.ttc)),
-            ttc_std=std(flatten(info.ttc)),
         )
 
     @property
