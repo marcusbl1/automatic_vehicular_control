@@ -217,6 +217,7 @@ class Main(Config):
         if c.n_rollouts_per_worker > 1:
             rollout_stats = [c.var(i_rollout=i).rollout() for i in range(c.n_rollouts_per_worker)]
             # may have to update this if to correspond with ttc edits in else
+            # edit 
         else:
             n_steps_total = 0
             rollout_stats = []
@@ -340,6 +341,7 @@ class Main(Config):
             c.on_step_end(gd_stats)
             c._i += 1
         c.on_step_start() # last step
+        gd_stats = {}
         with torch.no_grad():
             rollouts = c.rollouts()
             c.on_step_end(gd_stats)
