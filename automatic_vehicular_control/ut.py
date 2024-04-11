@@ -274,12 +274,21 @@ class FFN(nn.Module):
 
         self.p_head = build_fc(s_sizes[-1], *layers.p, c.model_output_size)
         self.sequential_init(self.p_head, 'policy')
+
+        # init zero res head no matter flag, so model saving format readable for restransfer base
+        self.res_shared = build_fc(*s_sizes)
+        self.res_head = build_fc(s_sizes[-1], *layers.p, c.model_output_size)
+        self.sequential_init(self.res_head, 'policy', is_residual=True)
+
+        print('init nominal layers?', [(x.weight, x.bias) for x in self.p_head if isinstance(x, nn.Linear)])
+        print('init resid layers?',[(x.weight, x.bias) for x in self.res_head if isinstance(x, nn.Linear)])
+
         self.v_head = None
         if c.use_critic:
             self.v_head = build_fc(s_sizes[-1], *layers.v, 1)
             self.sequential_init(self.v_head, 'value')
 
-    def sequential_init(self, seq, key):
+    def sequential_init(self, seq, key, is_residual=False):
         c = self.c
         linears = [m for m in seq if isinstance(m, nn.Linear)]
         for i, m in enumerate(linears):
@@ -299,18 +308,60 @@ class FFN(nn.Module):
             elif c.weight_init == 'xavier':
                 nn.init.xavier_normal_(m.weight, gain=scale)
             nn.init.zeros_(m.bias)
+            if is_residual and i == len(linears)-1: # zero-init last linear layer of res network
+                nn.init.zeros_(m.weight)
 
     def forward(self, inp, value=False, policy=False, argmax=None):
-        s = self.shared(inp)
-        pred = Namespace()
-        if value and self.v_head:
-            pred.value = self.v_head(s).view(-1)
-        if policy or argmax is not None:
-            pred.policy = self.p_head(s)
-            if argmax is not None:
-                dist = self.c.dist_class(pred.policy)
-                pred.action = dist.argmax() if argmax else dist.sample()
+        # TODO: residual transfer: forward pred has to give sum of preds from main (nominal) and residual network
+        # also only defined for continuous actions (not discrete like lc)
+
+        if not self.c.residual_transfer: # original case
+            s = self.shared(inp)
+            pred = Namespace()
+            if value and self.v_head:
+                pred.value = self.v_head(s).view(-1)
+            if policy or argmax is not None:
+                pred.policy = self.p_head(s)
+                if argmax is not None:
+                    dist = self.c.dist_class(pred.policy)
+                    pred.action = dist.argmax() if argmax else dist.sample()
+
+        if self.c.residual_transfer: # residual transfer case
+            with torch.no_grad():
+                s = self.shared(inp)
+            r = self.res_shared(inp)
+            pred = Namespace()
+            if value and self.v_head:
+                pred.value = self.v_head(s).view(-1) # TODO?
+            if policy or argmax is not None:
+                with torch.no_grad():
+                    nom_policy = self.p_head(s)
+                res_policy = self.res_head(r)
+                pred.policy = res_policy # TODO??
+                #     import pdb; pdb.set_trace()
+                # print(pred.policy)
+                if argmax is not None:
+                    with torch.no_grad():
+                        nom_dist = self.c.dist_class(nom_policy)
+                        nom_action = nom_dist.argmax() if argmax else nom_dist.sample()
+                    res_dist = self.c.dist_class(res_policy)
+                    res_action = res_dist.argmax() if argmax else res_dist.sample()
+                    pred.action = nom_action + res_action
+            
+           # TODO: return pred {nominal value, policy tuple, sum of actions} -- what is policy being used for? why return --> what type to return
+
         return pred
+    
+    # TODO: implement custom backward (more extensible if I want to fix value function in future), or
+    # init nominal such that requires_grad=False, value and residual - true
+    # basically want gradients for residual and value but not nominal
+
+    # @staticmethod
+    # def backward(self, inp, outp):
+    #     if not self.c.residual_transfer:
+    #         return super().backward() # need to return original backwards method for nominal training
+    #     else:
+    #         # custom gradient
 
 def calc_adv(reward, gamma, value_=None, lam=None):
     """
@@ -485,6 +536,7 @@ class PPO(Algorithm):
                 start_logp = start_dist.logp(mb.action)
                 if 'pg_obj' not in batch:
                     mb.pg_obj = mb.adv if c.use_critic else mb.ret
+                # TODO: if custom backwards func implemented, no need to if/else here
                 pred = c._model(mb.obs, value=True, policy=True)
                 curr_dist = c.dist_class(pred.policy)
                 p_ratio = (curr_dist.logp(mb.action) - start_logp).exp()
@@ -560,13 +612,20 @@ class TRPO(Algorithm):
             return (pg_obj * p_ratio).mean()
 
         # objective is -policy_loss, actually here the p_ratio is just 1, but we care about the gradients
+
+        # TODO: if custom backwards func implemented, no need to if/else here
         pred = c._model(b.obs, value=True, policy=True)
         pred_dist = c.dist_class(pred.policy)
         obj = surrogate(pred_dist)
 
         from torch.nn.utils import parameters_to_vector, vector_to_parameters
 
-        params = list(c._model.p_head.parameters())
+        # TODO: change params network depending on if residual transfering
+        if c.residual_transfer:
+            params = list(c._model.res_head.parameters())
+        else:
+            params = list(c._model.p_head.parameters())
+        # print(params)
         flat_start_params = parameters_to_vector(params).clone()
         grad_obj = parameters_to_vector(torch.autograd.grad(obj, params, retain_graph=True))
 
@@ -605,6 +664,7 @@ class TRPO(Algorithm):
             step = max_trpo_step
             for i_scale in range(c.steps_backtrack):
                 vector_to_parameters(flat_start_params + step, params)
+                # import pdb; pdb.set_trace()
                 test_dist = c.dist_class(c._model(b.obs, policy=True).policy)
                 test_obj = surrogate(test_dist)
                 kl = start_dist.kl(test_dist).mean()

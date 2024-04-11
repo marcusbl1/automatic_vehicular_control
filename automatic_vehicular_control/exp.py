@@ -46,6 +46,8 @@ class Main(Config):
 
     def set_model(c):
         c._model = c.get('model_cls', FFN)(c)
+        # TODO: need to load original model weights then init new side network?
+        # load_state(), set_state(), load_state_dict()
         return c
 
     def schedule(c, coef, schedule=None):
@@ -232,6 +234,7 @@ class Main(Config):
         a_space = c.action_space
         step = 0
         while step < c.horizon + c.skip_stat_steps and not done:
+            # TODO: if training residual, use torch no grad or use policy=False (?) to get nominal pred, then call pred on residual normally and sum pred.actions
             pred = from_torch(c._model(to_torch(rollout.obs[-1]), value=False, policy=True, argmax=False))
             if c.get('aclip', True) and isinstance(a_space, Box):
                 pred.action = np.clip(pred.action, a_space.low, a_space.high)
@@ -316,8 +319,6 @@ class Main(Config):
             gd_stats = {}
             if len(rollouts.obs):
                 t_start = time()
-                rollouts['policy'] = [x.astype(float) for x in rollouts['policy']]
-                rollouts['action'] = [x.astype(float) for x in rollouts['action']]
                 c._alg.optimize(rollouts)
                 gd_stats.update(gd_time=time() - t_start)
             c.on_step_end(gd_stats)

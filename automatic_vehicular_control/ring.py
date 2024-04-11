@@ -257,6 +257,7 @@ if __name__ == '__main__':
         render=False,
 
         beta=0,
+        residual_transfer=False,
     )
     if c.n_lanes == 1:
         c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature)
