@@ -290,6 +290,7 @@ if __name__ == '__main__':
         scale_drac=1,
         seed_np=False,
         seed_torch = False,
+        residual_transfer=False,
     )
     if c.seed_torch:
         # Set seed for PyTorch CPU operations
