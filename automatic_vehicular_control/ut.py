@@ -98,7 +98,7 @@ class NamedArrays(dict):
             if isinstance(v, NamedArrays):
                 v.to_torch(dtype, device)
             else:
-                if v.dtype == np.object:
+                if v.dtype == object:
                     self[k] = [torch.tensor(np.ascontiguousarray(x), device=device) for x in v]
                 else:
                     self[k] = torch.tensor(np.ascontiguousarray(v), device=device)
@@ -273,6 +273,9 @@ class FFN(nn.Module):
         self.shared = build_fc(*s_sizes)
 
         self.p_head = build_fc(s_sizes[-1], *layers.p, c.model_output_size)
+
+        # TODO: init new side model p_head
+        
         self.sequential_init(self.p_head, 'policy')
         self.v_head = None
         if c.use_critic:
@@ -307,10 +310,13 @@ class FFN(nn.Module):
             pred.value = self.v_head(s).view(-1)
         if policy or argmax is not None:
             pred.policy = self.p_head(s)
+
             if argmax is not None:
                 dist = self.c.dist_class(pred.policy)
                 pred.action = dist.argmax() if argmax else dist.sample()
         return pred
+
+        # TODO: define own backward to not update weights of p.head
 
 def calc_adv(reward, gamma, value_=None, lam=None):
     """

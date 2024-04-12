@@ -98,7 +98,47 @@ class FigureEightEnv(Env):
             reward -= c.accel_penalty * np.abs(rl_speeds - self.last_speeds) / c.sim_step
         self.last_speeds = rl_speeds
 
-        return dict(obs=obs.astype(np.float32), id=rl_ids, reward=np.full(c.av, reward))
+        # return dict(obs=obs.astype(np.float32), id=rl_ids, reward=np.full(c.av, reward))
+
+        speed_reward=reward/max_speed
+        ttc = self.calc_ttc()/7
+        drac = 20*np.sqrt(self.calc_drac())
+
+        # ssm = ttc - drac
+        ssm = ttc
+
+        reward = (1-c.beta)*speed_reward + c.beta*ssm
+        returned = dict(obs=obs.astype(np.float32),  id=rl_ids, reward=np.full(c.av, reward), ttc=ttc, speed_reward=speed_reward, drac=drac, ssm=ssm) 
+        return returned
+    
+    def calc_ttc(self):
+        cur_veh_list = self.ts.vehicles
+        ttcs = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            leader_speed = leader.speed
+            if leader_speed < v_speed:
+                ttc =  headway/(v_speed-leader_speed)
+                # print('if184')
+            else:
+                ttc = np.nan
+                # print('else187')
+            ttcs.append(ttc)
+        fleet_ttc = np.nanmean(np.array(ttcs))
+        return np.log10(fleet_ttc) if not np.isnan(fleet_ttc) else 7 # empirically set big ttc
+    
+    def calc_drac(self):
+        cur_veh_list = self.ts.vehicles
+        dracs = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            leader_speed = leader.speed
+            drac =  0.5*np.square(v_speed-leader_speed)/headway
+            dracs.append(drac)
+        fleet_drac = np.nanmean(np.array(drac))
+        return fleet_drac
 
 class FigureEight(Main):
     def create_env(c):

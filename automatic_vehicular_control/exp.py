@@ -283,8 +283,16 @@ class Main(Config):
         log(**stats)
         log(
             reward_mean=np.mean(reward),
+            speed_reward_mean=np.mean(rollout.speed_reward),
+            speed_reward_std=np.std(rollout.speed_reward),
             ttc_mean=np.mean(rollout.ttc),
-            ttc_std = np.std(rollout.ttc),
+            ttc_std=np.std(rollout.ttc),
+            drac_mean=np.mean(rollout.drac),
+            drac_std=np.std(rollout.drac),
+            pet_mean=np.mean(rollout.pet),
+            pet_std=np.std(rollout.pet),
+            ssm_mean=np.mean(rollout.ssm),
+            ssm_std=np.std(rollout.ssm),
             value_mean=np.mean(value_) if c.use_critic else None,
             ret_mean=np.mean(ret),
             adv_mean=np.mean(adv) if c.use_critic else None,
@@ -316,8 +324,6 @@ class Main(Config):
             gd_stats = {}
             if len(rollouts.obs):
                 t_start = time()
-                rollouts['policy'] = [x.astype(float) for x in rollouts['policy']]
-                rollouts['action'] = [x.astype(float) for x in rollouts['action']]
                 c._alg.optimize(rollouts)
                 gd_stats.update(gd_time=time() - t_start)
             c.on_step_end(gd_stats)
@@ -366,6 +372,7 @@ class Main(Config):
             c.n_workers = 1
             c.setdefaults(use_ray=False, n_rollouts_per_worker=c.n_rollouts_per_step // c.n_workers)
             c.eval()
+            c.log('job done!')
         else:
             c.setdefaults(device='cuda' if torch.cuda.is_available() else 'cpu')
             if c.get('use_ray', True) and c.n_rollouts_per_step > 1 and c.get('n_workers', np.inf) > 1:
@@ -389,3 +396,4 @@ class Main(Config):
                 c.setdefaults(n_workers=1, n_rollouts_per_worker=c.n_rollouts_per_step, use_ray=False)
             assert c.n_workers * c.n_rollouts_per_worker == c.n_rollouts_per_step
             c.train()
+            c.log('job done!')
