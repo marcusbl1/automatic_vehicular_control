@@ -40,6 +40,7 @@ class RingEnv(Env):
         c = self.c
         stats = {k: v for k, v in super().stats.items() if 'flow' not in k}
         stats['circumference'] = c.circumference
+        stats['beta'] = c.beta
         return stats
 
     def step(self, action=None):
@@ -159,25 +160,59 @@ class RingEnv(Env):
 
         self.last_speed = rl.speed
 
-        ttc = self.calc_ttc()
-        c.ttc_rewards += [ttc]
-        reward = (1-c.beta)*reward + c.beta*ttc
+        # how to normalize?
 
-        return obs.astype(np.float32), reward, False, None
-    
+        speed_reward=np.clip(reward/max_speed, -1, 1)
+        ttc = np.clip(self.calc_ttc()/7, -1, 1)
+        drac = np.clip(self.calc_drac()/10, -1, 1)
+        pet = np.clip(self.calc_pet(), -1, 1)
+
+        ssm = (c.scale_ttc*ttc - c.scale_drac*drac)/2
+        reward = (1-c.beta)*speed_reward + c.beta*ssm
+        
+        returned = dict(obs=obs.astype(np.float32), reward=reward, speed_reward=speed_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm) 
+        return returned
+        # return obs.astype(np.float32), reward, False, None, ttc
+
     def calc_ttc(self):
         cur_veh_list = self.ts.vehicles
         ttcs = []
         for v in cur_veh_list:
             leader, headway = v.leader()
-            v_speed = v.speed + 1e-31 # account for if 0 speed
-            leader_speed = leader.speed + 1e-31
+            v_speed = v.speed
+            leader_speed = leader.speed
             if leader_speed < v_speed:
-                ttc = max(5, headway/v_speed) # max ttc hardcoded 5
+                ttc =  headway/(v_speed-leader_speed)
             else:
-                ttc = 5
+                ttc = np.nan
             ttcs.append(ttc)
-        return np.mean(np.array(ttcs))
+        fleet_ttc = np.nanmean(np.array(ttcs))
+        return np.log10(fleet_ttc) if not np.isnan(fleet_ttc) else 7 # empirically set big ttc
+    
+    def calc_drac(self):
+        cur_veh_list = self.ts.vehicles
+        dracs = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            leader_speed = leader.speed
+            drac = 0.5*np.square(v_speed-leader_speed)/headway
+            dracs.append(drac)
+        fleet_drac = np.nanmean(np.array(drac))
+        return np.log10(fleet_drac) if not np.isnan(fleet_drac) else 1e-4 # empirically set small drac
+
+    def calc_pet(self):
+        cur_veh_list = self.ts.vehicles
+        pets = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            if v_speed > 1e-16:
+                pet = headway/(v_speed)
+                pets.append(pet)
+        fleet_pet = np.nanmean(np.array(pets))
+        # return fleet_pet if not np.isnan(fleet_pet) else 1
+        return np.log10(fleet_pet) if not np.isnan(fleet_pet) else 6 # empirically set big pet
 
 class Ring(Main):
     def create_env(c):
@@ -250,8 +285,21 @@ if __name__ == '__main__':
         render=False,
 
         beta=0,
-        ttc_rewards = []
+        scale_ttc=1,
+        scale_pet=1,
+        scale_drac=1,
+        seed_np=False,
+        seed_torch = False,
     )
+    if c.seed_torch:
+        # Set seed for PyTorch CPU operations
+        torch.manual_seed(c.seed_torch)
+        # Set seed for PyTorch CUDA operations (if available)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(c.seed_torch)
+    if c.seed_np:
+        np.random.seed(c.seed_np)
+
     if c.n_lanes == 1:
         c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature)
     elif c.n_lanes == 2:

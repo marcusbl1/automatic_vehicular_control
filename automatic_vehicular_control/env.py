@@ -1131,7 +1131,6 @@ class Env:
         Save simulation statistics at the current step
         """
         ts = self.ts
-        c = self.c
         rl, human = ts.types.rl, ts.types.human
 
         c = self.c
@@ -1147,7 +1146,6 @@ class Env:
             inflow=len(ts.new_departed),
             outflow=len(ts.new_arrived),
             backlog=sum(len(f.backlog) for f in ts.flows),
-            ttc=c.ttc_rewards
         )
 
     def extend_vehicle_info(self):
@@ -1198,7 +1196,6 @@ class Env:
             collisions=sum(info.collisions),
             collisions_human=sum(info.collisions_human),
             fuel=sum(flatten(info.fuel)) / (len(unique) or np.nan),
-            ttc_min=min(flatten(info.ttc)),
         )
 
     @property
@@ -1257,15 +1254,19 @@ class NormEnv(gym.Env):
     def step(self, action=None):
         ret = self.env.step(action)
         if isinstance(ret, tuple):
-            obs, reward, done, info = ret
+            obs, reward, done, info, = ret
+            # obs, reward, done, info, ttc = ret
             norm_obs = self.norm_obs(obs)
             norm_rew = self.norm_reward(reward)
+            # return norm_obs, norm_rew, done, reward, ttc
             return norm_obs, norm_rew, done, reward
         else:
             if 'obs' in ret:
                 ret['obs'] = self.norm_obs(ret['obs'])
             ret['raw_reward'] = ret['reward']
             ret['reward'] = self.norm_reward(ret['reward'])
+            # ret['ttc'] = self.norm_reward(ret['ttc'])
+            # print('env step ttc norm')
             return ret
 
     def __getattr__(self, attr):
