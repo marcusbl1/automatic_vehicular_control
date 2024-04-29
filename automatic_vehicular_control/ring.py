@@ -113,6 +113,7 @@ class RingEnv(Env):
             return c.observation_space.low, 0, True, None
 
         leader, dist = rl.leader()
+        # TODO: MRTL add c.beta to obs
         if c.n_lanes == 1:
             obs = [rl.speed / max_speed, leader.speed / max_speed, dist / max_dist]
             if c.circ_feature:
@@ -131,7 +132,7 @@ class RingEnv(Env):
                     np.array([dist, odist, fdist, ofdist]) / max_dist
                 ])
             else:
-                obs = [rl.speed]
+                obs = [rl.speeda]
                 for lane in rl.edge.lanes:
                     is_rl_lane = lane == rl.lane
                     if is_rl_lane:
@@ -142,7 +143,7 @@ class RingEnv(Env):
                         obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
                 obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 2)]
         else:
-            obs = [rl.speed]
+            obs = [rl.speed] # TODO: [rl.speed, c.beta] for MRTL
             follower, fdist = rl.follower()
             for lane in rl.edge.lanes:
                 is_rl_lane = lane == rl.lane
@@ -153,6 +154,7 @@ class RingEnv(Env):
                     ofollower, ofdist = lane.prev_vehicle(rl.laneposition, route=rl.route)
                     obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
             obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 3)]
+        obs = np.concatenate([obs, np.array([c.beta])])
         obs = np.clip(obs, 0, 1) * (1 - c.low) + c.low
         reward = np.mean([v.speed for v in (ts.vehicles if c.global_reward else rl_type.vehicles)])
         if c.accel_penalty and hasattr(self, 'last_speed'):
@@ -302,10 +304,12 @@ if __name__ == '__main__':
         np.random.seed(c.seed_np)
 
     if c.n_lanes == 1:
-        c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature)
+        c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature + 1) # modified for mrtl related
     elif c.n_lanes == 2:
         c.setdefaults(n_veh=44, lc_mode=LC_MODE.no_lat_collide, symmetric=False, symmetric_action=None, lc_av=2)
         c._n_obs = (1 + 2 * 2 * 2) if c.symmetric else (1 + 2 * 5)
+        c._n_obs += 1
+        # TODO: change this for MRTL
     elif c.n_lanes == 3:
         c.setdefaults(n_veh=66, lc_mode=LC_MODE.no_lat_collide, symmetric=False, symmetric_action=None, lc_av=3, _n_obs=1 + 3 * (1 + 2 * 2))
     c.step_save = c.step_save or min(5, c.n_steps // 10)

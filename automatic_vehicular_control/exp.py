@@ -152,6 +152,7 @@ class Main(Config):
         c._run_start_time = time()
         c._i = c.set_state(c._model, opt=c._opt, step='max')
         if c._i:
+            print(c._i)
             c._results = c.load_train_results().loc[:c._i]
             c._run_start_time -= c._results.loc[c._i, 'total_time']
         else:
@@ -286,6 +287,7 @@ class Main(Config):
         log(**stats)
         log(
             reward_mean=np.mean(reward),
+            reward_std=np.std(reward),
             speed_reward_mean=np.mean(rollout.speed_reward),
             speed_reward_std=np.std(rollout.speed_reward),
             ttc_mean=np.mean(rollout.ttc),
@@ -357,7 +359,6 @@ class Main(Config):
         for _ in range(c.n_steps):
             c.rollouts()
             if c.get('result_save'):
-                print('RESULTS\n', c._results)
                 c._results.to_csv(c.result_save)
             if c.get('vehicle_info_save'):
                 np.savez_compressed(c.vehicle_info_save, **{k: v.values.astype(type(v.iloc[0])) for k, v in c._env.vehicle_info.iteritems()})
@@ -376,7 +377,6 @@ class Main(Config):
             c.n_workers = 1
             c.setdefaults(use_ray=False, n_rollouts_per_worker=c.n_rollouts_per_step // c.n_workers)
             c.eval()
-            c.log('job done!')
         else:
             c.setdefaults(device='cuda' if torch.cuda.is_available() else 'cpu')
             if c.get('use_ray', True) and c.n_rollouts_per_step > 1 and c.get('n_workers', np.inf) > 1:
@@ -401,4 +401,4 @@ class Main(Config):
                 c.setdefaults(n_workers=1, n_rollouts_per_worker=c.n_rollouts_per_step, use_ray=False)
             assert c.n_workers * c.n_rollouts_per_worker == c.n_rollouts_per_step
             c.train()
-            c.log('job done!')
+        c.log('job done!')

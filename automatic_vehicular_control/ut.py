@@ -271,11 +271,7 @@ class FFN(nn.Module):
         s_sizes = [c.observation_space.shape[0], *layers.s]
 
         self.shared = build_fc(*s_sizes)
-
         self.p_head = build_fc(s_sizes[-1], *layers.p, c.model_output_size)
-
-        # TODO: init new side model p_head
-        
         self.sequential_init(self.p_head, 'policy')
 
         # init zero res head no matter flag, so model saving format readable for restransfer base
@@ -283,8 +279,8 @@ class FFN(nn.Module):
         self.res_head = build_fc(s_sizes[-1], *layers.p, c.model_output_size)
         self.sequential_init(self.res_head, 'policy', is_residual=True)
 
-        print('init nominal layers?', [(x.weight, x.bias) for x in self.p_head if isinstance(x, nn.Linear)])
-        print('init resid layers?',[(x.weight, x.bias) for x in self.res_head if isinstance(x, nn.Linear)])
+        # print('init nominal layers?', [(x.weight, x.bias) for x in self.p_head if isinstance(x, nn.Linear)])
+        # print('init resid layers?',[(x.weight, x.bias) for x in self.res_head if isinstance(x, nn.Linear)])
 
         self.v_head = None
         if c.use_critic:
@@ -335,7 +331,8 @@ class FFN(nn.Module):
             r = self.res_shared(inp)
             pred = Namespace()
             if value and self.v_head:
-                pred.value = self.v_head(s).view(-1) # TODO?
+                with torch.no_grad():
+                    pred.value = self.v_head(s).view(-1) # TODO?
             if policy or argmax is not None:
                 with torch.no_grad():
                     nom_policy = self.p_head(s)
@@ -350,6 +347,8 @@ class FFN(nn.Module):
                     res_dist = self.c.dist_class(res_policy)
                     res_action = res_dist.argmax() if argmax else res_dist.sample()
                     pred.action = nom_action + res_action
+                    # print('predicted nom, res', nom_action, res_action)
+                    # print(self.p_head[0].weight, self.res_head[0].weight)
             
            # TODO: return pred {nominal value, policy tuple, sum of actions} -- what is policy being used for? why return --> what type to return
 
