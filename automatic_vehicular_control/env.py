@@ -63,7 +63,9 @@ class E(list):
         return self._dict.__setitem__(k, v)
 
     def __getattr__(self, k):
-        if k == '__array_struct__':
+        # if k in ['__array_struct__', '__array_interface__', '__array__']:
+            # import pdb; pdb.set_trace()
+        if k in ['__array_struct__']:
             raise AttributeError
         if k in ['_dict', '_name']:
             return self.__dict__[k]
@@ -236,6 +238,8 @@ class NetBuilder:
         nodes = [E('node', **n.setdefaults(id=f'n_{n.x}.{n.y}')) for n in node_infos]
         self.nodes.update((n.id, n) for n in nodes)
         ret = np.empty(len(nodes), dtype=object)
+        # import pdb; pdb.set_trace()
+        # ret = np.array(nodes)
         ret[:] = nodes
         return ret
 
@@ -910,12 +914,14 @@ class TrafficState:
         for veh_id in sim_res.departed_vehicles_ids:
             subscribes.veh.subscribe(veh_id)
             type_id = tc.vehicle.getTypeID(veh_id)
+            # import pdb; pdb.set_trace()
             if type_id == 'generic':
                 type_id = self.compute_type(veh_id)
             type_ = self.types[type_id]
             route = self.routes[tc.vehicle.getRouteID(veh_id)]
             length = tc.vehicle.getLength(veh_id)
-            self.vehicles[veh_id] = veh = Vehicle(id=veh_id, type=type_, route=route, length=length)
+            road_id = tc.vehicle.getRoadID(veh_id)
+            self.vehicles[veh_id] = veh = Vehicle(id=veh_id, type=type_, route=route, length=length, road_id=road_id)
             type_.vehicles.add(veh)
 
             if c.render:
@@ -940,6 +946,7 @@ class TrafficState:
         for veh_id, veh in self.vehicles.items():
             veh.prev_speed = veh.get('speed', None)
             veh.update(subscribes.veh.get(veh_id))
+            # veh.road_id=tc.vehicle.getRoadID(veh_id)
             edge = self.edges[veh.road_id]
             edge.vehicles.append(veh)
             veh.edge = edge

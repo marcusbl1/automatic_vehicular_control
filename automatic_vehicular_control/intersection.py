@@ -29,6 +29,7 @@ class IntersectionEnv(Env):
         nodes = builder.add_nodes(
             [Namespace(x=x, y=y, type='priority') for y, x in xys]
         ).reshape(c.n_rows + 2, c.n_cols + 2)
+        # import pdb; pdb.set_trace()
 
         tl = c.setdefault('tl', False)
         if tl:
@@ -240,12 +241,72 @@ class IntersectionEnv(Env):
 
         sort_id = lambda d: [v for k, v in sorted(d.items())]
         ids = sorted(obs)
+        if c.mrtl:
+            obs = np.concatenate([obs, np.array([c.beta])])
         obs = arrayf(sort_id(obs)).reshape(-1, c._n_obs)
         if c.rew_type == 'outflow':
             reward = len(ts.new_arrived) - c.collision_coef * len(ts.new_collided)
         elif c.rew_type == 'time_penalty':
             reward = -c.sim_step * (len(ts.vehicles) + sum(len(f.backlog) for f in ts.flows)) - c.collision_coef * len(ts.new_collided)
+
+        # outflow_reward=np.clip(reward/c.flow_rate, -1, 1)
+
+        # raw_drac = self.calc_drac()
+        # drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4 # empirically set small drac
+        # drac = np.clip(drac/10, -1, 1)
+        # raw_pet = self.calc_pet()
+        # pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6 # empirically set big pet
+        # pet = np.clip(pet, -1, 1)
+
+        # raw_ttc = self.calc_ttc()
+        # ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # empirically set big ttc
+        # ttc = np.clip(ttc/7, -1, 1)
+
+        # ssm = (c.scale_pet*pet - c.scale_drac*drac)/2
+        # reward = (1-c.beta)*outflow_reward + c.beta*ssm
+
+        # returned = Namespace(obs=obs.astype(np.float32), id=ids, reward=reward, outflow_reward=outflow_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm, raw_ttc=raw_ttc, raw_drac=raw_drac, raw_pet=raw_pet) 
+        # return returned
         return Namespace(obs=obs, id=ids, reward=reward)
+        
+    def calc_drac(self):
+        cur_veh_list = self.ts.vehicles
+        dracs = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            leader_speed = leader.speed
+            drac = 0.5*np.square(v_speed-leader_speed)/headway
+            dracs.append(drac)
+        fleet_drac = np.nanmean(np.array(dracs))
+        return fleet_drac
+    
+    def calc_pet(self):
+        cur_veh_list = self.ts.vehicles
+        pets = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            if v_speed > 1e-16:
+                pet = headway/(v_speed)
+                pets.append(pet)
+        fleet_pet = np.nanmean(np.array(pets))
+        return fleet_pet
+
+    def calc_ttc(self):
+        cur_veh_list = self.ts.vehicles
+        ttcs = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            leader_speed = leader.speed
+            if leader_speed < v_speed:
+                ttc =  headway/(v_speed-leader_speed)
+            else:
+                ttc = np.nan
+            ttcs.append(ttc)
+        fleet_ttc = np.nanmean(np.array(ttcs))
+        return fleet_ttc
 
     def append_step_info(self):
         super().append_step_info()
@@ -365,10 +426,30 @@ if __name__ == '__main__':
 
         obs_tail=True,
         obs_next_cross_platoons=1,
+
+        beta=0,
+        scale_pet=1,
+        scale_drac=1,
+        seed_np=False,
+        seed_torch = False,
+        residual_transfer=False, # this flag deals with which network to modify (nominal if False, residual if True). instantiates both.
+        mrtl=False, # this flag deals with adding beta to observation vector
     )
+
+    if c.seed_torch:
+        # Set seed for PyTorch CPU operations
+        torch.manual_seed(c.seed_torch)
+        # Set seed for PyTorch CUDA operations (if available)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(c.seed_torch)
+    if c.seed_np:
+        np.random.seed(c.seed_np)
+
     if c.directions == '4way':
         c.directions = ['up', 'right', 'down', 'left']
     c._n_obs = 2 * (1 + c.obs_tail + (1 + 2 * c.obs_next_cross_platoons) * (len(c.directions) - 1))
+    if c.mrtl:
+        c._n_obs += 1
     assert c.get('use_critic', False) is False, 'Not supporting value functions yet'
     c.redef_sumo = 'length_range' in c
     c.run()

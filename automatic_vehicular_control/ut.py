@@ -188,10 +188,16 @@ class CatDist(Dist):
 
 class DiagGaussianDist(Dist):
     """ Diagonal Gaussian distribution (for continuous action spaces) """
-    def __init__(self, inputs):
+    def __init__(self, inputs, is_residual=False):
         super().__init__(inputs)
         self.mean, self.log_std = torch.chunk(inputs, 2, dim=-1)
         self.std = self.log_std.exp()
+        # print('is_residual outcome', is_residual)
+        if is_residual:
+            # print('is_residual ut 196')
+            self.mean, self.std = torch.chunk(inputs, 2, dim=-1)
+            self.std = torch.relu(self.std)
+            self.std = self.std+1e-6
         self.dist = torch.distributions.normal.Normal(self.mean, self.std)
 
     def argmax(self):
@@ -299,7 +305,9 @@ class FFN(nn.Module):
                 scale = c.weight_scale[key][i]
             else:
                 scale = 0.01 if m == linears[-1] else 1
-            if c.weight_init == 'normc': # normalize along input dimension
+            if is_residual and i == len(linears)-1: # zero-init last linear layer of res network
+                nn.init.zeros_(m.weight)
+            elif c.weight_init == 'normc': # normalize along input dimension
                 weight = torch.randn_like(m.weight)
                 m.weight.data = weight * scale / weight.norm(dim=1, keepdim=True)
             elif c.weight_init == 'orthogonal':
@@ -307,8 +315,7 @@ class FFN(nn.Module):
             elif c.weight_init == 'xavier':
                 nn.init.xavier_normal_(m.weight, gain=scale)
             nn.init.zeros_(m.bias)
-            if is_residual and i == len(linears)-1: # zero-init last linear layer of res network
-                nn.init.zeros_(m.weight)
+            
 
     def forward(self, inp, value=False, policy=False, argmax=None):
         # TODO: residual transfer: forward pred has to give sum of preds from main (nominal) and residual network
@@ -325,6 +332,9 @@ class FFN(nn.Module):
                     dist = self.c.dist_class(pred.policy)
                     pred.action = dist.argmax() if argmax else dist.sample()
 
+                    pred.nom_action = pred.action
+                    pred.res_action = pred.action # res_action is just returning nom_action value
+
         if self.c.residual_transfer: # residual transfer case
             with torch.no_grad():
                 s = self.shared(inp)
@@ -337,6 +347,7 @@ class FFN(nn.Module):
                 with torch.no_grad():
                     nom_policy = self.p_head(s)
                 res_policy = self.res_head(r)
+                # print('res policy', res_policy)
                 pred.policy = res_policy # TODO??
                 #     import pdb; pdb.set_trace()
                 # print(pred.policy)
@@ -344,11 +355,17 @@ class FFN(nn.Module):
                     with torch.no_grad():
                         nom_dist = self.c.dist_class(nom_policy)
                         nom_action = nom_dist.argmax() if argmax else nom_dist.sample()
-                    res_dist = self.c.dist_class(res_policy)
+                    res_dist = self.c.dist_class(res_policy, is_residual=True)
                     res_action = res_dist.argmax() if argmax else res_dist.sample()
                     pred.action = nom_action + res_action
                     # print('predicted nom, res', nom_action, res_action)
                     # print(self.p_head[0].weight, self.res_head[0].weight)
+
+                    # pred.nom_action = nom_action
+                    # pred.res_action = res_action
+
+                    # print('nominal layers?', [(x.weight, x.bias) for x in self.p_head if isinstance(x, nn.Linear)])
+                    # print('resid layers?',[(x.weight, x.bias) for x in self.res_head if isinstance(x, nn.Linear)])
             
            # TODO: return pred {nominal value, policy tuple, sum of actions} -- what is policy being used for? why return --> what type to return
 

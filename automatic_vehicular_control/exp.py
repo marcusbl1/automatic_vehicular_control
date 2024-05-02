@@ -288,16 +288,29 @@ class Main(Config):
         log(
             reward_mean=np.mean(reward),
             reward_std=np.std(reward),
-            speed_reward_mean=np.mean(rollout.speed_reward),
-            speed_reward_std=np.std(rollout.speed_reward),
-            ttc_mean=np.mean(rollout.ttc),
-            ttc_std=np.std(rollout.ttc),
-            drac_mean=np.mean(rollout.drac),
-            drac_std=np.std(rollout.drac),
-            pet_mean=np.mean(rollout.pet),
-            pet_std=np.std(rollout.pet),
+
+            speed_reward_mean=np.mean(rollout.speed_reward) if rollout.speed_reward else None,
+            speed_reward_std=np.std(rollout.speed_reward) if rollout.speed_reward else None,
+            # outflow_reward_mean=np.mean(rollout.outflow_reward) if rollout.outflow_reward else None,
+            # outflow_reward_std=np.std(rollout.outflow_reward) if rollout.outflow_reward else None,
             ssm_mean=np.mean(rollout.ssm),
             ssm_std=np.std(rollout.ssm),
+
+            ttc_mean=np.mean(rollout.ttc) if rollout.ttc else None,
+            ttc_std=np.std(rollout.ttc) if rollout.ttc else None,
+            drac_mean=np.mean(rollout.drac) if rollout.drac else None,
+            drac_std=np.std(rollout.drac) if rollout.drac else None,
+            pet_mean=np.mean(rollout.pet) if rollout.pet else None,
+            pet_std=np.std(rollout.pet) if rollout.pet else None,
+
+            # nom_action = np.mean(rollout.nom_action),
+            # res_action = np.mean(rollout.res_action),
+
+            raw_ttc_mean=np.mean(rollout.raw_ttc) if rollout.raw_ttc else None,
+            raw_ttc_std=np.std(rollout.raw_ttc) if rollout.raw_ttc else None,
+            raw_drac_mean=np.mean(rollout.raw_drac) if rollout.raw_drac else None,
+            raw_drac_std=np.std(rollout.raw_drac) if rollout.raw_drac else None,
+
             value_mean=np.mean(value_) if c.use_critic else None,
             ret_mean=np.mean(ret),
             adv_mean=np.mean(adv) if c.use_critic else None,

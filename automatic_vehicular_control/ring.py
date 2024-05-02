@@ -104,7 +104,6 @@ class RingEnv(Env):
 
         super().step()
 
-        #todo?
         if len(ts.new_arrived | ts.new_collided):
             print('Detected collision')
             return c.observation_space.low, -c.collision_penalty, True, None
@@ -132,7 +131,7 @@ class RingEnv(Env):
                     np.array([dist, odist, fdist, ofdist]) / max_dist
                 ])
             else:
-                obs = [rl.speeda]
+                obs = [rl.speed]
                 for lane in rl.edge.lanes:
                     is_rl_lane = lane == rl.lane
                     if is_rl_lane:
@@ -154,7 +153,8 @@ class RingEnv(Env):
                     ofollower, ofdist = lane.prev_vehicle(rl.laneposition, route=rl.route)
                     obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
             obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 3)]
-        obs = np.concatenate([obs, np.array([c.beta])])
+        if c.mrtl:
+            obs = np.concatenate([obs, np.array([c.beta])])
         obs = np.clip(obs, 0, 1) * (1 - c.low) + c.low
         reward = np.mean([v.speed for v in (ts.vehicles if c.global_reward else rl_type.vehicles)])
         if c.accel_penalty and hasattr(self, 'last_speed'):
@@ -162,17 +162,22 @@ class RingEnv(Env):
 
         self.last_speed = rl.speed
 
-        # how to normalize?
-
         speed_reward=np.clip(reward/max_speed, -1, 1)
-        ttc = np.clip(self.calc_ttc()/7, -1, 1)
-        drac = np.clip(self.calc_drac()/10, -1, 1)
-        pet = np.clip(self.calc_pet(), -1, 1)
+
+        raw_ttc, raw_drac = self.calc_ttc(), self.calc_drac()
+        ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # empirically set big ttc
+        ttc = np.clip(ttc/7, -1, 1)
+        drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4 # empirically set small drac
+        drac = np.clip(drac/10, -1, 1)
+
+        raw_pet = self.calc_pet()
+        pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6 # empirically set big pet
+        pet = np.clip(pet, -1, 1)
 
         ssm = (c.scale_ttc*ttc - c.scale_drac*drac)/2
         reward = (1-c.beta)*speed_reward + c.beta*ssm
         
-        returned = dict(obs=obs.astype(np.float32), reward=reward, speed_reward=speed_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm) 
+        returned = dict(obs=obs.astype(np.float32), reward=reward, speed_reward=speed_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm, raw_ttc=raw_ttc, raw_drac=raw_drac, raw_pet=raw_pet) 
         return returned
         # return obs.astype(np.float32), reward, False, None, ttc
 
@@ -189,7 +194,7 @@ class RingEnv(Env):
                 ttc = np.nan
             ttcs.append(ttc)
         fleet_ttc = np.nanmean(np.array(ttcs))
-        return np.log10(fleet_ttc) if not np.isnan(fleet_ttc) else 7 # empirically set big ttc
+        return fleet_ttc
     
     def calc_drac(self):
         cur_veh_list = self.ts.vehicles
@@ -200,8 +205,8 @@ class RingEnv(Env):
             leader_speed = leader.speed
             drac = 0.5*np.square(v_speed-leader_speed)/headway
             dracs.append(drac)
-        fleet_drac = np.nanmean(np.array(drac))
-        return np.log10(fleet_drac) if not np.isnan(fleet_drac) else 1e-4 # empirically set small drac
+        fleet_drac = np.nanmean(np.array(dracs))
+        return fleet_drac
 
     def calc_pet(self):
         cur_veh_list = self.ts.vehicles
@@ -214,7 +219,7 @@ class RingEnv(Env):
                 pets.append(pet)
         fleet_pet = np.nanmean(np.array(pets))
         # return fleet_pet if not np.isnan(fleet_pet) else 1
-        return np.log10(fleet_pet) if not np.isnan(fleet_pet) else 6 # empirically set big pet
+        return fleet_pet
 
 class Ring(Main):
     def create_env(c):
@@ -292,7 +297,8 @@ if __name__ == '__main__':
         scale_drac=1,
         seed_np=False,
         seed_torch = False,
-        residual_transfer=False,
+        residual_transfer=False, # this flag deals with which network to modify (nominal if False, residual if True). instantiates both.
+        mrtl=False, # this flag deals with adding beta to observations
     )
     if c.seed_torch:
         # Set seed for PyTorch CPU operations
@@ -304,14 +310,14 @@ if __name__ == '__main__':
         np.random.seed(c.seed_np)
 
     if c.n_lanes == 1:
-        c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature + 1) # modified for mrtl related
+        c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature)
     elif c.n_lanes == 2:
         c.setdefaults(n_veh=44, lc_mode=LC_MODE.no_lat_collide, symmetric=False, symmetric_action=None, lc_av=2)
         c._n_obs = (1 + 2 * 2 * 2) if c.symmetric else (1 + 2 * 5)
-        c._n_obs += 1
-        # TODO: change this for MRTL
     elif c.n_lanes == 3:
         c.setdefaults(n_veh=66, lc_mode=LC_MODE.no_lat_collide, symmetric=False, symmetric_action=None, lc_av=3, _n_obs=1 + 3 * (1 + 2 * 2))
+    if c.mrtl:
+        c._n_obs += 1 # modified for mrtl related
     c.step_save = c.step_save or min(5, c.n_steps // 10)
     c.redef_sumo = bool(c.circumference_range)
     c.run()
