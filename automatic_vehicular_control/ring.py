@@ -112,7 +112,6 @@ class RingEnv(Env):
             return c.observation_space.low, 0, True, None
 
         leader, dist = rl.leader()
-        # TODO: MRTL add c.beta to obs
         if c.n_lanes == 1:
             obs = [rl.speed / max_speed, leader.speed / max_speed, dist / max_dist]
             if c.circ_feature:
@@ -142,7 +141,7 @@ class RingEnv(Env):
                         obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
                 obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 2)]
         else:
-            obs = [rl.speed] # TODO: [rl.speed, c.beta] for MRTL
+            obs = [rl.speed]
             follower, fdist = rl.follower()
             for lane in rl.edge.lanes:
                 is_rl_lane = lane == rl.lane
