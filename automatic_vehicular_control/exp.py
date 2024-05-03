@@ -342,6 +342,7 @@ class Main(Config):
             gd_stats = {}
             if len(rollouts.obs):
                 t_start = time()
+                print('reward', rollouts['reward'])
                 c._alg.optimize(rollouts)
                 gd_stats.update(gd_time=time() - t_start)
             c.on_step_end(gd_stats)
