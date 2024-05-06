@@ -364,7 +364,6 @@ def build_closed_route(edges, n_veh=0, av=0, space='random_free', type_fn=None, 
         veh_routes = lane_routes[veh_lane]
         veh_lane_idxs = lane_idxs[veh_lane]
         type_fn = type_fn or (lambda i: 'rl' if i < av else 'human')
-        #todo: update E method to include ssm device setting
         vehicles = [E('vehicle', id=f'{i}', type=type_fn(i), route=r, depart='0', departPos=p, departLane=l, departSpeed=depart_speed) for i, (r, p, l) in enumerate(zip(veh_routes, veh_lane_pos, veh_lane_idxs))]
         # modify vehicle objects to add ssm device param
         # for i in range(len(vehicles)):
@@ -946,10 +945,14 @@ class TrafficState:
         for veh_id, veh in self.vehicles.items():
             veh.prev_speed = veh.get('speed', None)
             veh.update(subscribes.veh.get(veh_id))
-            # veh.road_id=tc.vehicle.getRoadID(veh_id)
-            edge = self.edges[veh.road_id]
-            edge.vehicles.append(veh)
-            veh.edge = edge
+            if veh_id not in sim_res.colliding_vehicles_ids:
+                edge = self.edges[veh.road_id]
+                edge.vehicles.append(veh)
+                veh.edge = edge
+            # veh.road_id=tc.vehicle.getRoadID(veh_id)          # i added this line only
+            # edge = self.edges[veh.road_id]
+            # edge.vehicles.append(veh)
+            # veh.edge = edge
 
         for edge in self.edges:
             edge.vehicles.sort(key=lambda veh: veh.laneposition)

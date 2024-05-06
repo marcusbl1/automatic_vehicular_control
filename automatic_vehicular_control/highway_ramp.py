@@ -83,45 +83,46 @@ class RampEnv(Env):
         route = ts.routes.highway
         obs, ids = [], []
         for veh in sorted(rl_type.vehicles, key=lambda v: v.id):
-            speed, edge, lane = veh.speed, veh.edge, veh.lane
-            merge_dist = max_dist
+            if hasattr(veh, 'edge'):
+                speed, edge, lane = veh.speed, veh.edge, veh.lane
+                merge_dist = max_dist
 
-            lead_speed = follow_speed = other_speed = 0
-            other_follow_dist = other_merge_dist = lead_dist = follow_dist = max_dist
+                lead_speed = follow_speed = other_speed = 0
+                other_follow_dist = other_merge_dist = lead_dist = follow_dist = max_dist
 
-            leader, dist = veh.leader()
-            if leader: lead_speed, lead_dist = leader.speed, dist
+                leader, dist = veh.leader()
+                if leader: lead_speed, lead_dist = leader.speed, dist
 
-            follower, dist = veh.follower()
-            if follower: follow_speed, follow_dist = follower.speed, dist
+                follower, dist = veh.follower()
+                if follower: follow_speed, follow_dist = follower.speed, dist
 
-            if c.global_obs:
-                jun_edge = edge.next(route)
-                while jun_edge and not (len(jun_edge.lanes) == 2 and jun_edge.lanes[0].get('junction')):
-                    jun_edge = jun_edge.next(route)
-                if jun_edge:
-                    merge_dist = lane.length - veh.laneposition
-                    next_edge = edge.next(route)
-                    while next_edge is not jun_edge:
-                        merge_dist += next_edge.length
-                        next_edge = next_edge.next(route)
+                if c.global_obs:
+                    jun_edge = edge.next(route)
+                    while jun_edge and not (len(jun_edge.lanes) == 2 and jun_edge.lanes[0].get('junction')):
+                        jun_edge = jun_edge.next(route)
+                    if jun_edge:
+                        merge_dist = lane.length - veh.laneposition
+                        next_edge = edge.next(route)
+                        while next_edge is not jun_edge:
+                            merge_dist += next_edge.length
+                            next_edge = next_edge.next(route)
 
-                    other_lane = jun_edge.lanes[0]
-                    for other_veh, other_merge_dist in other_lane.prev_vehicles(0, route=ts.routes.ramp):
-                        other_speed = other_veh.speed
-                        break
-                obs.append([merge_dist, speed, lead_dist, lead_speed, follow_dist, follow_speed, other_merge_dist, other_speed])
-            else:
-                next_lane = lane.next(route)
-                if next_lane and next_lane.get('junction'):
-                    if len(edge.lanes) == 2:
-                        other_lane = edge.lanes[0]
-                        pos = veh.laneposition
-                        for other_veh, other_follow_dist in other_lane.prev_vehicles(pos, route=ts.routes.ramp):
+                        other_lane = jun_edge.lanes[0]
+                        for other_veh, other_merge_dist in other_lane.prev_vehicles(0, route=ts.routes.ramp):
                             other_speed = other_veh.speed
                             break
-                obs.append([speed, lead_dist, lead_speed, follow_dist, follow_speed, other_follow_dist, other_speed])
-            ids.append(veh.id)
+                    obs.append([merge_dist, speed, lead_dist, lead_speed, follow_dist, follow_speed, other_merge_dist, other_speed])
+                else:
+                    next_lane = lane.next(route)
+                    if next_lane and next_lane.get('junction'):
+                        if len(edge.lanes) == 2:
+                            other_lane = edge.lanes[0]
+                            pos = veh.laneposition
+                            for other_veh, other_follow_dist in other_lane.prev_vehicles(pos, route=ts.routes.ramp):
+                                other_speed = other_veh.speed
+                                break
+                    obs.append([speed, lead_dist, lead_speed, follow_dist, follow_speed, other_follow_dist, other_speed])
+                ids.append(veh.id)
         obs = np.array(obs).reshape(-1, c._n_obs) / ([*lif(c.global_obs, max_dist), max_speed] + [max_dist, max_speed] * 3)
         obs = np.clip(obs, 0, 1).astype(np.float32) * (1 - c.low) + c.low
         reward = len(ts.new_arrived) - c.collision_coef * len(ts.new_collided)
@@ -204,6 +205,14 @@ if __name__ == '__main__':
         gamma=0.99,
         adv_norm=False,
         batch_concat=True,
+
+        beta=0,
+        scale_pet=1,
+        scale_drac=1,
+        seed_np=False,
+        seed_torch = False,
+        residual_transfer=False, # this flag deals with which network to modify (nominal if False, residual if True). instantiates both.
+        mrtl=False, # this flag deals with adding beta to observation vector
 
     )
     c._n_obs = c.global_obs + 1 + 2 + 2 + 2

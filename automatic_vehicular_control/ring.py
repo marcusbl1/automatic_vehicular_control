@@ -320,5 +320,3 @@ if __name__ == '__main__':
     c.step_save = c.step_save or min(5, c.n_steps // 10)
     c.redef_sumo = bool(c.circumference_range)
     c.run()
-
-    #todo save s_rewards, p_rewards into a file for ipynb to graph

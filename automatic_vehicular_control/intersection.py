@@ -192,52 +192,53 @@ class IntersectionEnv(Env):
         veh_default_far = Namespace(speed=0, route_position=-np.inf)
         vehs_default = lambda: [veh_default_close] + [veh_default_far] * 2 * c.obs_next_cross_platoons
         for veh in rl_type.vehicles:
-            route, lane, platoon = veh.route, veh.lane, veh.platoon
-            junction = lane.next_junction
+            if hasattr(veh, 'lane'):
+                route, lane, platoon = veh.route, veh.lane, veh.platoon
+                junction = lane.next_junction
 
-            head, tail = veh, platoon.tail
-            route_vehs = [(route, [head, *lif(c.obs_tail, tail)])]
+                head, tail = veh, platoon.tail
+                route_vehs = [(route, [head, *lif(c.obs_tail, tail)])]
 
-            if junction is ts.sentinel_junction:
-                route_vehs.extend([(None, vehs_default())] * (len(c.directions) - 1))
-            else:
-                for jun_lane in lane.next_junction_lanes:
-                    # Defaults for jun_lane
-                    jun_headtails = vehs_default()
+                if junction is ts.sentinel_junction:
+                    route_vehs.extend([(None, vehs_default())] * (len(c.directions) - 1))
+                else:
+                    for jun_lane in lane.next_junction_lanes:
+                        # Defaults for jun_lane
+                        jun_headtails = vehs_default()
 
-                    jun_lane_route = nexti(jun_lane.from_routes)
-                    jun_veh, _ = jun_lane.prev_vehicle(0, route=jun_lane_route)
-                    jun_veh = jun_veh if jun_veh and jun_veh.lane.next_junction is junction else None
+                        jun_lane_route = nexti(jun_lane.from_routes)
+                        jun_veh, _ = jun_lane.prev_vehicle(0, route=jun_lane_route)
+                        jun_veh = jun_veh if jun_veh and jun_veh.lane.next_junction is junction else None
 
-                    if jun_veh:
-                        if jun_veh.type is rl_type:
-                            # If jun_veh is RL or jun_veh is human and there's no RL vehicle in front of it
-                            jun_headtails[1: 3] = jun_veh, jun_veh.platoon.tail
-                            platoon = jun_veh.platoon.prev
-                            for i in 1 + 2 * np.arange(1, c.obs_next_cross_platoons):
-                                if platoon is None: break
-                                jun_headtails[i: i + 2] = platoon.head, platoon.tail
-                                platoon = platoon.prev
-                        else:
-                            # If jun_veh is a human vehicle behind some RL vehicle (in another lane)
-                            jun_headtails[0] = jun_veh.platoon.tail
-                            next_cross_platoon = jun_veh.platoon.prev
-                            if next_cross_platoon:
-                                jun_headtails[1: 3] = next_cross_platoon.head, next_cross_platoon.tail
-                                platoon = next_cross_platoon.prev
+                        if jun_veh:
+                            if jun_veh.type is rl_type:
+                                # If jun_veh is RL or jun_veh is human and there's no RL vehicle in front of it
+                                jun_headtails[1: 3] = jun_veh, jun_veh.platoon.tail
+                                platoon = jun_veh.platoon.prev
                                 for i in 1 + 2 * np.arange(1, c.obs_next_cross_platoons):
                                     if platoon is None: break
                                     jun_headtails[i: i + 2] = platoon.head, platoon.tail
                                     platoon = platoon.prev
-                    route_vehs.append((jun_lane_route, jun_headtails))
+                            else:
+                                # If jun_veh is a human vehicle behind some RL vehicle (in another lane)
+                                jun_headtails[0] = jun_veh.platoon.tail
+                                next_cross_platoon = jun_veh.platoon.prev
+                                if next_cross_platoon:
+                                    jun_headtails[1: 3] = next_cross_platoon.head, next_cross_platoon.tail
+                                    platoon = next_cross_platoon.prev
+                                    for i in 1 + 2 * np.arange(1, c.obs_next_cross_platoons):
+                                        if platoon is None: break
+                                        jun_headtails[i: i + 2] = platoon.head, platoon.tail
+                                        platoon = platoon.prev
+                        route_vehs.append((jun_lane_route, jun_headtails))
 
-            dist_features, speed_features = [], []
-            for route, vehs in route_vehs:
-                j_pos = junction.route_position[route]
-                dist_features.extend([0 if j_pos == v.route_position else (j_pos - v.route_position) / max_dist for v in vehs])
-                speed_features.extend([v.speed / max_speed for v in vehs])
+                dist_features, speed_features = [], []
+                for route, vehs in route_vehs:
+                    j_pos = junction.route_position[route]
+                    dist_features.extend([0 if j_pos == v.route_position else (j_pos - v.route_position) / max_dist for v in vehs])
+                    speed_features.extend([v.speed / max_speed for v in vehs])
 
-            obs[veh.id] = np.clip([*dist_features, *speed_features], 0, 1).astype(np.float32) * (1 - c.low) + c.low
+                obs[veh.id] = np.clip([*dist_features, *speed_features], 0, 1).astype(np.float32) * (1 - c.low) + c.low
 
         sort_id = lambda d: [v for k, v in sorted(d.items())]
         ids = sorted(obs)
@@ -320,6 +321,8 @@ class IntersectionEnv(Env):
         stats = {**super().stats, **dif('length_range' in c, length=c.length), **dif('av_range' in c, av_frac=c.av_frac)}
         stats['backlog_step'] = mean(info['backlog'])
         stats['n_total_veh_step'] = mean(info['n_veh_network']) + stats['backlog_step']
+
+        stats['beta'] = c.beta
 
         if c.multi_flowrate:
             stats['flow_horizontal'] = c.flow_rate_h

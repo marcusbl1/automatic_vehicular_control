@@ -643,7 +643,8 @@ class Namespace(Dict):
 
     def unvar(self, *args):
         for a in args:
-            self.pop(a)
+            if a in self:
+                self.pop(a)
         return self
 
     def setdefaults(self, *args, **kwargs):

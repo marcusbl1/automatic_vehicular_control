@@ -46,8 +46,6 @@ class Main(Config):
 
     def set_model(c):
         c._model = c.get('model_cls', FFN)(c)
-        # TODO: need to load original model weights then init new side network?
-        # load_state(), set_state(), load_state_dict()
         return c
 
     def schedule(c, coef, schedule=None):
@@ -285,6 +283,7 @@ class Main(Config):
 
         log = c.get_log_ii(ii)
         log(**stats)
+        print('rollout end!!!')
         log(
             reward_mean=np.mean(reward),
             reward_std=np.std(reward),

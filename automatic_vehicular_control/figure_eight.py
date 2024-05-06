@@ -98,18 +98,18 @@ class FigureEightEnv(Env):
             reward -= c.accel_penalty * np.abs(rl_speeds - self.last_speeds) / c.sim_step
         self.last_speeds = rl_speeds
 
-        # return dict(obs=obs.astype(np.float32), id=rl_ids, reward=np.full(c.av, reward))
+        return dict(obs=obs.astype(np.float32), id=rl_ids, reward=np.full(c.av, reward))
 
-        speed_reward=reward/max_speed
-        ttc = self.calc_ttc()/7
-        drac = 20*np.sqrt(self.calc_drac())
+        # speed_reward=reward/max_speed
+        # ttc = self.calc_ttc()/7
+        # drac = 20*np.sqrt(self.calc_drac())
 
-        # ssm = ttc - drac
-        ssm = ttc
+        # # ssm = ttc - drac
+        # ssm = ttc
 
-        reward = (1-c.beta)*speed_reward + c.beta*ssm
-        returned = dict(obs=obs.astype(np.float32),  id=rl_ids, reward=np.full(c.av, reward), ttc=ttc, speed_reward=speed_reward, drac=drac, ssm=ssm) 
-        return returned
+        # reward = (1-c.beta)*speed_reward + c.beta*ssm
+        # returned = dict(obs=obs.astype(np.float32),  id=rl_ids, reward=np.full(c.av, reward), ttc=ttc, speed_reward=speed_reward, drac=drac, ssm=ssm) 
+        # return returned
     
     def calc_ttc(self):
         cur_veh_list = self.ts.vehicles
@@ -185,6 +185,14 @@ if __name__ == '__main__':
         step_save=5,
 
         render=False,
+
+        beta=0,
+        scale_pet=1,
+        scale_drac=1,
+        seed_np=False,
+        seed_torch = False,
+        residual_transfer=False, # this flag deals with which network to modify (nominal if False, residual if True). instantiates both.
+        mrtl=False, # this flag deals with adding beta to observation vector
     )
     c._n_obs = 2 * c.n_veh
     c.run()

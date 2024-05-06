@@ -260,6 +260,14 @@ if __name__ == '__main__':
         adv_norm=False,
         batch_concat=True,
 
+        beta=0,
+        scale_pet=1,
+        scale_drac=1,
+        seed_np=False,
+        seed_torch = False,
+        residual_transfer=False, # this flag deals with which network to modify (nominal if False, residual if True). instantiates both.
+        mrtl=False, # this flag deals with adding beta to observation vector
+
     )
     if c.vinitsky:
         c.piece_length = 20
