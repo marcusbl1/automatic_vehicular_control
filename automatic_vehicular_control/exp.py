@@ -283,7 +283,6 @@ class Main(Config):
 
         log = c.get_log_ii(ii)
         log(**stats)
-        print('rollout end!!!')
         log(
             reward_mean=np.mean(reward),
             reward_std=np.std(reward),

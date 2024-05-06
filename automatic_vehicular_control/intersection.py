@@ -250,25 +250,25 @@ class IntersectionEnv(Env):
         elif c.rew_type == 'time_penalty':
             reward = -c.sim_step * (len(ts.vehicles) + sum(len(f.backlog) for f in ts.flows)) - c.collision_coef * len(ts.new_collided)
 
-        # outflow_reward=np.clip(reward/c.flow_rate, -1, 1)
+        outflow_reward=np.clip(reward/c.flow_rate, -1, 1)
 
-        # raw_drac = self.calc_drac()
-        # drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4 # empirically set small drac
-        # drac = np.clip(drac/10, -1, 1)
-        # raw_pet = self.calc_pet()
-        # pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6 # empirically set big pet
-        # pet = np.clip(pet, -1, 1)
+        raw_drac = self.calc_drac()
+        drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4 # empirically set small drac
+        drac = np.clip(drac/10, -1, 1)
+        raw_pet = self.calc_pet()
+        pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6 # empirically set big pet
+        pet = np.clip(pet/6, -1, 1)
 
-        # raw_ttc = self.calc_ttc()
-        # ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # empirically set big ttc
-        # ttc = np.clip(ttc/7, -1, 1)
+        raw_ttc = self.calc_ttc()
+        ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # empirically set big ttc
+        ttc = np.clip(ttc/7, -1, 1)
 
-        # ssm = (c.scale_pet*pet - c.scale_drac*drac)/2
-        # reward = (1-c.beta)*outflow_reward + c.beta*ssm
+        ssm = (c.scale_pet*pet - c.scale_drac*drac)/2
+        reward = (1-c.beta)*outflow_reward + c.beta*ssm
 
-        # returned = Namespace(obs=obs.astype(np.float32), id=ids, reward=reward, outflow_reward=outflow_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm, raw_ttc=raw_ttc, raw_drac=raw_drac, raw_pet=raw_pet) 
-        # return returned
-        return Namespace(obs=obs, id=ids, reward=reward)
+        returned = Namespace(obs=obs.astype(np.float32), id=ids, reward=reward, outflow_reward=outflow_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm, raw_ttc=raw_ttc, raw_drac=raw_drac, raw_pet=raw_pet) 
+        return returned
+        # return Namespace(obs=obs, id=ids, reward=reward)
         
     def calc_drac(self):
         cur_veh_list = self.ts.vehicles
@@ -374,7 +374,34 @@ class Intersection(Main):
         log(**stats)
         log(raw_reward_mean=raw_reward.mean(), raw_reward_sum=raw_reward.sum())
         log(reward_mean=reward.mean(), reward_sum=reward.sum())
-        log(n_veh_step_mean=n_veh.mean(), n_veh_step_sum=n_veh.sum(), n_veh_unique=len(id_unique))
+        log(
+            n_veh_step_mean=n_veh.mean(), 
+            n_veh_step_sum=n_veh.sum(), 
+            n_veh_unique=len(id_unique),
+            
+            reward_mean=np.mean(reward),
+            reward_std=np.std(reward),        
+            outflow_reward_mean=np.mean(rollout.outflow_reward) if rollout.outflow_reward else None,
+            outflow_reward_std=np.std(rollout.outflow_reward) if rollout.outflow_reward else None,
+            ssm_mean=np.mean(rollout.ssm),
+            ssm_std=np.std(rollout.ssm),
+            drac_mean=np.mean(rollout.drac) if rollout.drac else None,
+            drac_std=np.std(rollout.drac) if rollout.drac else None,
+            pet_mean=np.mean(rollout.pet) if rollout.pet else None,
+            pet_std=np.std(rollout.pet) if rollout.pet else None,
+            raw_drac_mean=np.mean(rollout.raw_drac) if rollout.raw_drac else None,
+            raw_drac_std=np.std(rollout.raw_drac) if rollout.raw_drac else None,
+            raw_pet_mean=np.mean(rollout.raw_pet) if rollout.raw_pet else None,
+            raw_pet_std=np.std(rollout.raw_pet) if rollout.raw_pet else None,
+
+            ttc_mean=np.mean(rollout.ttc) if rollout.ttc else None,
+            ttc_std=np.std(rollout.ttc) if rollout.ttc else None,
+            raw_ttc_mean=np.mean(rollout.raw_ttc) if rollout.raw_ttc else None,
+            raw_ttc_std=np.std(rollout.raw_ttc) if rollout.raw_ttc else None,
+            # nom_action = np.mean(rollout.nom_action),
+            # res_action = np.mean(rollout.res_action),
+            )
+        
         return rollout
 
 if __name__ == '__main__':
