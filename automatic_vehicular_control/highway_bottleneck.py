@@ -170,7 +170,66 @@ class BNeckEnv(Env):
         obs = np.array(obs).reshape(-1, c._n_obs) / ([max_dist, max_speed] * 3)
         obs = np.clip(obs, 0, 1).astype(np.float32) * (1 - c.low) + c.low
         reward = len(ts.new_arrived) - c.collision_coef * len(ts.new_collided)
-        return Namespace(obs=obs, id=ids, reward=reward)
+        
+        theoretical_outnum = c.flow_rate/3600 * c.sim_step # units: number of vehicles. sim_step: sec, flow_rate: veh/hr
+        outflow_reward=np.clip(reward/theoretical_outnum, -1, 1)
+
+        raw_ttc, raw_drac = self.calc_ttc(), self.calc_drac()
+        ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # empirically set big ttc
+        ttc = np.clip(ttc/7, -1, 1)
+        drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4 # empirically set small drac
+        drac = np.clip(drac/10, -1, 1)
+
+        raw_pet = self.calc_pet()
+        pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6 # empirically set big pet
+        pet = np.clip(pet, -1, 1)
+
+        ssm = (c.scale_ttc*ttc - c.scale_drac*drac)/2
+        reward = (1-c.beta)*outflow_reward + c.beta*ssm
+        
+        returned = dict(obs=obs, id=ids, reward=reward, outflow_reward=outflow_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm, raw_ttc=raw_ttc, raw_drac=raw_drac, raw_pet=raw_pet) 
+        return returned
+        
+        # return Namespace(obs=obs, id=ids, reward=reward)
+    
+    def calc_ttc(self):
+        cur_veh_list = self.ts.vehicles
+        ttcs = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            leader_speed = leader.speed
+            if leader_speed < v_speed:
+                ttc =  headway/(v_speed-leader_speed)
+            else:
+                ttc = np.nan
+            ttcs.append(ttc)
+        fleet_ttc = np.nanmean(np.array(ttcs))
+        return fleet_ttc
+    
+    def calc_drac(self):
+        cur_veh_list = self.ts.vehicles
+        dracs = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            leader_speed = leader.speed
+            drac = 0.5*np.square(v_speed-leader_speed)/headway
+            dracs.append(drac)
+        fleet_drac = np.nanmean(np.array(dracs))
+        return fleet_drac
+
+    def calc_pet(self):
+        cur_veh_list = self.ts.vehicles
+        pets = []
+        for v in cur_veh_list:
+            leader, headway = v.leader()
+            v_speed = v.speed
+            if v_speed > 1e-16:
+                pet = headway/(v_speed)
+                pets.append(pet)
+        fleet_pet = np.nanmean(np.array(pets))
+        return fleet_pet
 
 class BNeck(Main):
     def create_env(c):
@@ -213,7 +272,33 @@ class BNeck(Main):
 
         log(**stats)
         log(reward_mean=reward.mean(), reward_sum=reward.sum())
-        log(n_veh_step_mean=n_veh.mean(), n_veh_step_sum=n_veh.sum(), n_veh_unique=len(id_unique))
+        log(
+            n_veh_step_mean=n_veh.mean(), 
+            n_veh_step_sum=n_veh.sum(), 
+            n_veh_unique=len(id_unique),
+            
+            reward_mean=np.mean(reward),
+            reward_std=np.std(reward),        
+            outflow_reward_mean=np.mean(rollout.outflow_reward) if rollout.outflow_reward else None,
+            outflow_reward_std=np.std(rollout.outflow_reward) if rollout.outflow_reward else None,
+            ssm_mean=np.mean(rollout.ssm),
+            ssm_std=np.std(rollout.ssm),
+            drac_mean=np.mean(rollout.drac) if rollout.drac else None,
+            drac_std=np.std(rollout.drac) if rollout.drac else None,
+            pet_mean=np.mean(rollout.pet) if rollout.pet else None,
+            pet_std=np.std(rollout.pet) if rollout.pet else None,
+            raw_drac_mean=np.mean(rollout.raw_drac) if rollout.raw_drac else None,
+            raw_drac_std=np.std(rollout.raw_drac) if rollout.raw_drac else None,
+            raw_pet_mean=np.mean(rollout.raw_pet) if rollout.raw_pet else None,
+            raw_pet_std=np.std(rollout.raw_pet) if rollout.raw_pet else None,
+
+            ttc_mean=np.mean(rollout.ttc) if rollout.ttc else None,
+            ttc_std=np.std(rollout.ttc) if rollout.ttc else None,
+            raw_ttc_mean=np.mean(rollout.raw_ttc) if rollout.raw_ttc else None,
+            raw_ttc_std=np.std(rollout.raw_ttc) if rollout.raw_ttc else None,
+            # nom_action = np.mean(rollout.nom_action),
+            # res_action = np.mean(rollout.res_action),
+            )
         return rollout
 
 if __name__ == '__main__':
@@ -261,7 +346,7 @@ if __name__ == '__main__':
         batch_concat=True,
 
         beta=0,
-        scale_pet=1,
+        scale_ttc=1,
         scale_drac=1,
         seed_np=False,
         seed_torch = False,
@@ -269,6 +354,16 @@ if __name__ == '__main__':
         mrtl=False, # this flag deals with adding beta to observation vector
 
     )
+    
+    if c.seed_torch:
+        # Set seed for PyTorch CPU operations
+        torch.manual_seed(c.seed_torch)
+        # Set seed for PyTorch CUDA operations (if available)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(c.seed_torch)
+    if c.seed_np:
+        np.random.seed(c.seed_np)
+        
     if c.vinitsky:
         c.piece_length = 20
         bneck_lengths = [20] + [40] * (len(c.edge_lengths) - 2) + [20]
@@ -278,5 +373,9 @@ if __name__ == '__main__':
         c.batch_concat = False
     else:
         c._n_obs = 2 + 2 + 2
+        
+    if c.mrtl:
+        c._n_obs += 1 # modified for mrtl related
+        
     c.redef_sumo = bool(c.flow_rate_range)
     c.run()

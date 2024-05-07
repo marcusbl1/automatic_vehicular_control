@@ -249,8 +249,9 @@ class IntersectionEnv(Env):
             reward = len(ts.new_arrived) - c.collision_coef * len(ts.new_collided)
         elif c.rew_type == 'time_penalty':
             reward = -c.sim_step * (len(ts.vehicles) + sum(len(f.backlog) for f in ts.flows)) - c.collision_coef * len(ts.new_collided)
-
-        outflow_reward=np.clip(reward/c.flow_rate, -1, 1)
+        
+        theoretical_outnum = 2*(c.flow_rate_h + c.flow_rate_v)/3600 * c.sim_step # units: number of vehicles. sim_step: sec, flow_rate: veh/hr
+        outflow_reward=np.clip(reward/theoretical_outnum, -1, 1)
 
         raw_drac = self.calc_drac()
         drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4 # empirically set small drac
@@ -266,7 +267,7 @@ class IntersectionEnv(Env):
         ssm = (c.scale_pet*pet - c.scale_drac*drac)/2
         reward = (1-c.beta)*outflow_reward + c.beta*ssm
 
-        returned = Namespace(obs=obs.astype(np.float32), id=ids, reward=reward, outflow_reward=outflow_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm, raw_ttc=raw_ttc, raw_drac=raw_drac, raw_pet=raw_pet) 
+        returned = Namespace(obs=obs, id=ids, reward=reward, outflow_reward=outflow_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm, raw_ttc=raw_ttc, raw_drac=raw_drac, raw_pet=raw_pet) 
         return returned
         # return Namespace(obs=obs, id=ids, reward=reward)
         
@@ -274,11 +275,12 @@ class IntersectionEnv(Env):
         cur_veh_list = self.ts.vehicles
         dracs = []
         for v in cur_veh_list:
-            leader, headway = v.leader()
-            v_speed = v.speed
-            leader_speed = leader.speed
-            drac = 0.5*np.square(v_speed-leader_speed)/headway
-            dracs.append(drac)
+            if hasattr(v, 'lane'):
+                leader, headway = v.leader()
+                v_speed = v.speed
+                leader_speed = leader.speed
+                drac = 0.5*np.square(v_speed-leader_speed)/headway
+                dracs.append(drac)
         fleet_drac = np.nanmean(np.array(dracs))
         return fleet_drac
     
@@ -286,11 +288,12 @@ class IntersectionEnv(Env):
         cur_veh_list = self.ts.vehicles
         pets = []
         for v in cur_veh_list:
-            leader, headway = v.leader()
-            v_speed = v.speed
-            if v_speed > 1e-16:
-                pet = headway/(v_speed)
-                pets.append(pet)
+            if hasattr(v, 'lane'):
+                leader, headway = v.leader()
+                v_speed = v.speed
+                if v_speed > 1e-16:
+                    pet = headway/(v_speed)
+                    pets.append(pet)
         fleet_pet = np.nanmean(np.array(pets))
         return fleet_pet
 
@@ -298,14 +301,15 @@ class IntersectionEnv(Env):
         cur_veh_list = self.ts.vehicles
         ttcs = []
         for v in cur_veh_list:
-            leader, headway = v.leader()
-            v_speed = v.speed
-            leader_speed = leader.speed
-            if leader_speed < v_speed:
-                ttc =  headway/(v_speed-leader_speed)
-            else:
-                ttc = np.nan
-            ttcs.append(ttc)
+            if hasattr(v, 'lane'):
+                leader, headway = v.leader()
+                v_speed = v.speed
+                leader_speed = leader.speed
+                if leader_speed < v_speed:
+                    ttc =  headway/(v_speed-leader_speed)
+                else:
+                    ttc = np.nan
+                ttcs.append(ttc)
         fleet_ttc = np.nanmean(np.array(ttcs))
         return fleet_ttc
 
