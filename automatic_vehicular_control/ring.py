@@ -1,78 +1,143 @@
-from automatic_vehicular_control.exp import *
-from automatic_vehicular_control.env import *
-from automatic_vehicular_control.u import *
+from automatic_vehicular_control.exp import *  # Import all from experimental utilities
+from automatic_vehicular_control.env import *  # Import all from environment utilities
+from automatic_vehicular_control.u import *    # Import all from utility functions
 
 class RingEnv(Env):
     def def_sumo(self):
-        c = self.c
-        r = c.circumference / (2 * np.pi)
+        c = self.c  # Configuration object
+        r = c.circumference / (2 * np.pi)  # Calculate the radius of the ring road
         nodes = E('nodes',
-            E('node', id='bottom', x=0, y=-r),
-            E('node', id='top', x=0, y=r),
+            E('node', id='bottom', x=0, y=-r),  # Define bottom node at (0, -r)
+            E('node', id='top', x=0, y=r),      # Define top node at (0, r)
         )
 
+        # Function to generate the shape of the edges (circular arcs)
         get_shape = lambda start_angle, end_angle: ' '.join('%.5f,%.5f' % (r * np.cos(i), r * np.sin(i)) for i in np.linspace(start_angle, end_angle, 80))
+
         edges = E('edges',
-            E('edge', **{'id': 'right', 'from': 'bottom', 'to': 'top', 'length': c.circumference / 2, 'shape': get_shape(-np.pi / 2, np.pi / 2), 'numLanes': c.n_lanes}),
-            E('edge', **{'id': 'left', 'from': 'top', 'to': 'bottom', 'length': c.circumference / 2, 'shape': get_shape(np.pi / 2, np.pi * 3 / 2), 'numLanes': c.n_lanes}),
+            E('edge', **{
+                'id': 'right',
+                'from': 'bottom',
+                'to': 'top',
+                'length': c.circumference / 2,
+                'shape': get_shape(-np.pi / 2, np.pi / 2),
+                'numLanes': c.n_lanes
+            }),
+            E('edge', **{
+                'id': 'left',
+                'from': 'top',
+                'to': 'bottom',
+                'length': c.circumference / 2,
+                'shape': get_shape(np.pi / 2, np.pi * 3 / 2),
+                'numLanes': c.n_lanes
+            }),
         )
 
         connections = E('connections',
-            *[E('connection', **{'from': 'left', 'to': 'right', 'fromLane': i, 'toLane': i}) for i in range(c.n_lanes)],
-            *[E('connection', **{'from': 'right', 'to': 'left', 'fromLane': i, 'toLane': i}) for i in range(c.n_lanes)],
+            # Create lane connections from 'left' to 'right' and vice versa
+            *[E('connection', **{
+                'from': 'left',
+                'to': 'right',
+                'fromLane': i,
+                'toLane': i
+            }) for i in range(c.n_lanes)],
+            *[E('connection', **{
+                'from': 'right',
+                'to': 'left',
+                'fromLane': i,
+                'toLane': i
+            }) for i in range(c.n_lanes)],
         )
 
         additional = E('additional',
-            E('vType', id='human', **{**IDM, **LC2013, **dict(accel=1, decel=1.5, minGap=2, sigma=c.sigma)}),
-            E('vType', id='rl', **{**IDM, **LC2013, **dict(accel=1, decel=1.5, minGap=2, sigma=0)}),
-            *build_closed_route(edges, c.n_veh, c.av, space=c.initial_space)
+            # Define human-driven vehicle type with specific parameters
+            E('vType', id='human', **{
+                **IDM, **LC2013, **dict(
+                    accel=1,
+                    decel=1.5,
+                    minGap=2,
+                    sigma=c.sigma
+                )
+            }),
+            # Define RL-controlled vehicle type with specific parameters
+            E('vType', id='rl', **{
+                **IDM, **LC2013, **dict(
+                    accel=1,
+                    decel=1.5,
+                    minGap=2,
+                    sigma=0  # No randomness in driving behavior
+                )
+            }),
+            # Build a closed route with specified number of vehicles and spacing
+            *build_closed_route(
+                edges,
+                c.n_veh,
+                c.av,
+                space=c.initial_space
+            )
         )
         return super().def_sumo(nodes, edges, connections, additional)
 
     def reset_sumo(self):
         c = self.c
         if c.circumference_range:
+            # Randomly set the circumference within the specified range
             c.circumference = np.random.randint(*c.circumference_range)
         return super().reset_sumo()
 
     @property
     def stats(self):
-        c = self.c
-        stats = {k: v for k, v in super().stats.items() if 'flow' not in k}
-        stats['circumference'] = c.circumference
-        stats['beta'] = c.beta
+        c = self.c # configuration
+        # Collect statistics excluding flow-related ones
+        stats = {
+            k: v
+            for k, v in super().stats.items()
+            if 'flow' not in k
+        }
+        stats['circumference'] = c.circumference  # Include current circumference
+        stats['beta'] = c.beta                    # Include beta parameter
         return stats
 
     def step(self, action=None):
         c = self.c
-        ts = self.ts
+        ts = self.ts  # Time step object
         max_speed = c.max_speed
         circ_max = max_dist = c.circumference_max
         circ_min = c.circumference_min
-        rl_type = ts.types.rl
+        rl_type = ts.types.rl  # RL-controlled vehicle type
 
         if not rl_type.vehicles:
+            # If there are no RL vehicles, proceed without action
             super().step()
             return c.observation_space.low, 0, False, 0
 
-        rl = nexti(rl_type.vehicles)
-        if action is not None: # action is None only right after reset
-            ts.tc.vehicle.setMinGap(rl.id, 0) # Set the minGap to 0 after the warmup period so the vehicle doesn't crash during warmup
-            accel, lc = (action, None) if not c.lc_av else action if c.lc_act_type == 'continuous' else (action['accel'], action['lc'])
-            if isinstance(accel, np.ndarray): accel = accel.item()
+        rl = nexti(rl_type.vehicles)  # Get the first RL-controlled vehicle
+        if action is not None:  # Only proceed if action is provided (not immediately after reset)
+            ts.tc.vehicle.setMinGap(rl.id, 0)  # Set minimal gap to 0 to prevent collision during warm-up
+            # Extract acceleration and lane change components from the action
+            accel, lc = (
+                (action, None) if not c.lc_av else
+                action if c.lc_act_type == 'continuous' else
+                (action['accel'], action['lc'])
+            )
+            if isinstance(accel, np.ndarray): accel = accel.item()  # Convert numpy array to scalar
             if isinstance(lc, np.ndarray): lc = lc.item()
             if c.norm_action and isinstance(accel, (float, np.floating)):
+                # Normalize acceleration action
                 accel = (accel - c.low) / (c.high - c.low)
             if c.norm_action and isinstance(lc, (float, np.floating)):
+                # Normalize lane change action
                 lc = bool(np.round((lc - c.low) / (c.high - c.low)))
 
             if c.get('handcraft'):
+                # Apply handcrafted control policies if specified
                 accel = (0.75 * np.sign(c.handcraft - rl.speed) + 1) / 2
                 lc = True
                 if c.get('handcraft_lc'):
                     if c.handcraft_lc == 'off':
                         lc = False
                     elif c.handcraft_lc == 'stabilize':
+                        # Determine whether to change lanes based on surrounding vehicles
                         other_lane = rl.lane.left or rl.lane.right
                         oleader, odist = other_lane.next_vehicle(rl.laneposition, route=rl.route)
                         ofollower, ofdist = other_lane.prev_vehicle(rl.laneposition, route=rl.route)
@@ -81,106 +146,195 @@ class RingEnv(Env):
                         else:
                             lc = False
 
+            # Apply acceleration or speed control based on action type
             if c.act_type == 'accel_discrete':
                 ts.accel(rl, accel / (c.n_actions - 1))
             elif c.act_type == 'accel':
                 if c.norm_action:
-                    accel = (accel * 2 - 1) * (c.max_accel if accel > 0.5 else c.max_decel)
+                    # Scale acceleration to match maximum acceleration/deceleration
+                    accel = (accel * 2 - 1) * (
+                        c.max_accel if accel > 0.5 else c.max_decel
+                    )
                 ts.accel(rl, accel)
             else:
+                # Set vehicle's maximum speed
                 if c.act_type == 'continuous':
                     level = accel
                 elif c.act_type == 'discretize':
-                    level = min(int(accel * c.n_actions), c.n_actions - 1) / (c.n_actions - 1)
+                    level = min(
+                        int(accel * c.n_actions),
+                        c.n_actions - 1
+                    ) / (c.n_actions - 1)
                 elif c.act_type == 'discrete':
                     level = accel / (c.n_actions - 1)
                 ts.set_max_speed(rl, max_speed * level)
             if c.n_lanes > 1:
                 if c.symmetric_action if c.symmetric_action is not None else c.symmetric:
                     if lc:
+                        # Perform lane change in a symmetric manner
                         ts.lane_change(rl, -1 if rl.lane_index % 2 else +1)
                 else:
+                    # Change to a specific lane
                     ts.lane_change_to(rl, lc)
 
-        super().step()
+        super().step()  # Advance the simulation by one time step
 
         if len(ts.new_arrived | ts.new_collided):
+            # Check for collisions
             print('Detected collision')
             return c.observation_space.low, -c.collision_penalty, True, None
         elif len(ts.vehicles) < c.n_veh:
+            # Check for missing vehicles (bad initialization)
             print('Bad initialization occurred, fix the initialization function')
             return c.observation_space.low, 0, True, None
 
-        leader, dist = rl.leader()
+        leader, dist = rl.leader()  # Get the leader vehicle and headway distance
         if c.n_lanes == 1:
-            obs = [rl.speed / max_speed, leader.speed / max_speed, dist / max_dist]
+            # Single-lane observation space
+            obs = [
+                rl.speed / max_speed,           # RL vehicle's speed
+                leader.speed / max_speed,       # Leader's speed
+                dist / max_dist                 # Headway distance
+            ]
             if c.circ_feature:
+                # Include normalized circumference feature
                 obs.append((c.circumference - circ_min) / (circ_max - circ_min))
             if c.accel_feature:
+                # Include leader's acceleration feature
                 obs.append(0 if leader.prev_speed is None else (leader.speed - leader.speed) / max_speed)
         elif c.n_lanes == 2:
+            # Two-lane observation space
             lane = rl.lane
-            follower, fdist = rl.follower()
+            follower, fdist = rl.follower()  # Get follower vehicle and distance
             if c.symmetric:
+                # Symmetric lane observations
                 other_lane = rl.lane.left or rl.lane.right
                 oleader, odist = other_lane.next_vehicle(rl.laneposition, route=rl.route)
                 ofollower, ofdist = other_lane.prev_vehicle(rl.laneposition, route=rl.route)
                 obs = np.concatenate([
-                    np.array([rl.speed, leader.speed, oleader.speed, follower.speed, ofollower.speed]) / max_speed,
-                    np.array([dist, odist, fdist, ofdist]) / max_dist
+                    np.array([
+                        rl.speed,
+                        leader.speed,
+                        oleader.speed,
+                        follower.speed,
+                        ofollower.speed
+                    ]) / max_speed,
+                    np.array([
+                        dist,
+                        odist,
+                        fdist,
+                        ofdist
+                    ]) / max_dist
                 ])
             else:
+                # Asymmetric lane observations
                 obs = [rl.speed]
                 for lane in rl.edge.lanes:
                     is_rl_lane = lane == rl.lane
                     if is_rl_lane:
-                        obs.extend([is_rl_lane, dist, leader.speed, fdist, follower.speed])
+                        obs.extend([
+                            is_rl_lane,
+                            dist,
+                            leader.speed,
+                            fdist,
+                            follower.speed
+                        ])
                     else:
                         oleader, odist = lane.next_vehicle(rl.laneposition, route=rl.route)
                         ofollower, ofdist = lane.prev_vehicle(rl.laneposition, route=rl.route)
-                        obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
-                obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 2)]
+                        obs.extend([
+                            is_rl_lane,
+                            odist,
+                            oleader.speed,
+                            ofdist,
+                            ofollower.speed
+                        ])
+                # Normalize the observation
+                obs = np.array(obs) / [
+                    max_speed,
+                    *([1, max_dist, max_speed, max_dist, max_speed] * 2)
+                ]
         else:
+            # Multi-lane observation space
             obs = [rl.speed]
             follower, fdist = rl.follower()
             for lane in rl.edge.lanes:
                 is_rl_lane = lane == rl.lane
                 if is_rl_lane:
-                    obs.extend([is_rl_lane, dist, leader.speed, fdist, follower.speed])
+                    obs.extend([
+                        is_rl_lane,
+                        dist,
+                        leader.speed,
+                        fdist,
+                        follower.speed
+                    ])
                 else:
                     oleader, odist = lane.next_vehicle(rl.laneposition, route=rl.route)
                     ofollower, ofdist = lane.prev_vehicle(rl.laneposition, route=rl.route)
-                    obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
-            obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 3)]
+                    obs.extend([
+                        is_rl_lane,
+                        odist,
+                        oleader.speed,
+                        ofdist,
+                        ofollower.speed
+                    ])
+            # Normalize the observation
+            obs = np.array(obs) / [
+                max_speed,
+                *([1, max_dist, max_speed, max_dist, max_speed] * 3)
+            ]
         if c.mrtl:
+            # If mrtl is enabled, include beta in observations
             obs = np.concatenate([obs, np.array([c.beta])])
+        # Clip and scale observations to specified range
         obs = np.clip(obs, 0, 1) * (1 - c.low) + c.low
-        reward = np.mean([v.speed for v in (ts.vehicles if c.global_reward else rl_type.vehicles)])
+        # Compute reward based on average speed
+        reward = np.mean([
+            v.speed for v in (
+                ts.vehicles if c.global_reward else rl_type.vehicles
+            )
+        ])
         if c.accel_penalty and hasattr(self, 'last_speed'):
+            # Apply penalty for acceleration changes
             reward -= c.accel_penalty * np.abs(rl.speed - self.last_speed) / c.sim_step
 
-        self.last_speed = rl.speed
+        self.last_speed = rl.speed  # Update last speed
 
-        speed_reward=np.clip(reward/max_speed, -1, 1)
+        speed_reward = np.clip(reward / max_speed, -1, 1)  # Normalize speed reward
 
+        # Calculate safety surrogate measures
         raw_ttc, raw_drac = self.calc_ttc(), self.calc_drac()
-        ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # empirically set big ttc
-        ttc = np.clip(ttc/7, -1, 1)
-        drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4 # empirically set small drac
-        drac = np.clip(drac/10, -1, 1)
+        ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # Use default if NaN
+        ttc = np.clip(ttc / 7, -1, 1)
+        drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4
+        drac = np.clip(drac / 10, -1, 1)
 
         raw_pet = self.calc_pet()
-        pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6 # empirically set big pet
+        pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6
         pet = np.clip(pet, -1, 1)
 
-        ssm = (c.scale_ttc*ttc - c.scale_drac*drac)/2
-        reward = (1-c.beta)*speed_reward + c.beta*ssm
-        
-        returned = dict(obs=obs.astype(np.float32), reward=reward, speed_reward=speed_reward, ttc=ttc, drac=drac, pet=pet, ssm=ssm, raw_ttc=raw_ttc, raw_drac=raw_drac, raw_pet=raw_pet) 
+        # Combine safety measures into a single value
+        ssm = (c.scale_ttc * ttc - c.scale_drac * drac) / 2
+        # Compute final reward combining speed and safety
+        reward = (1 - c.beta) * speed_reward + c.beta * ssm
+
+        returned = dict(
+            obs=obs.astype(np.float32),  # Observations
+            reward=reward,               # Final reward
+            speed_reward=speed_reward,   # Speed component of the reward
+            ttc=ttc,                     # Time to collision
+            drac=drac,                   # Deceleration rate to avoid collision
+            pet=pet,                     # Post-encroachment time
+            ssm=ssm,                     # Safety surrogate measure
+            raw_ttc=raw_ttc,             # Raw TTC value
+            raw_drac=raw_drac,           # Raw DRAC value
+            raw_pet=raw_pet              # Raw PET value
+        ) 
         return returned
         # return obs.astype(np.float32), reward, False, None, ttc
 
     def calc_ttc(self):
+        # Calculate the average Time to Collision (TTC) for all vehicles
         cur_veh_list = self.ts.vehicles
         ttcs = []
         for v in cur_veh_list:
@@ -188,135 +342,166 @@ class RingEnv(Env):
             v_speed = v.speed
             leader_speed = leader.speed
             if leader_speed < v_speed:
-                ttc =  headway/(v_speed-leader_speed)
+                ttc = headway / (v_speed - leader_speed)
             else:
-                ttc = np.nan
+                ttc = np.nan  # Undefined if leader is faster or same speed
             ttcs.append(ttc)
-        fleet_ttc = np.nanmean(np.array(ttcs))
+        fleet_ttc = np.nanmean(np.array(ttcs))  # Average TTC, ignoring NaNs
         return fleet_ttc
-    
+        
     def calc_drac(self):
+        # Calculate the average Deceleration Rate to Avoid Collision (DRAC) for all vehicles
         cur_veh_list = self.ts.vehicles
         dracs = []
         for v in cur_veh_list:
             leader, headway = v.leader()
             v_speed = v.speed
             leader_speed = leader.speed
-            drac = 0.5*np.square(v_speed-leader_speed)/headway
+            drac = 0.5 * np.square(v_speed - leader_speed) / headway
             dracs.append(drac)
-        fleet_drac = np.nanmean(np.array(dracs))
+        fleet_drac = np.nanmean(np.array(dracs))  # Average DRAC, ignoring NaNs
         return fleet_drac
 
     def calc_pet(self):
+        # Calculate the average Post-Encroachment Time (PET) for all vehicles
         cur_veh_list = self.ts.vehicles
         pets = []
         for v in cur_veh_list:
             leader, headway = v.leader()
             v_speed = v.speed
             if v_speed > 1e-16:
-                pet = headway/(v_speed)
+                pet = headway / v_speed
                 pets.append(pet)
-        fleet_pet = np.nanmean(np.array(pets))
-        # return fleet_pet if not np.isnan(fleet_pet) else 1
+        fleet_pet = np.nanmean(np.array(pets))  # Average PET, ignoring NaNs
         return fleet_pet
 
 class Ring(Main):
     def create_env(c):
+        # Create the normalized environment with the RingEnv
         return NormEnv(c, RingEnv(c))
 
     @property
     def observation_space(self):
+        # Define the observation space for the RL agent
         return Box(low=0, high=1, shape=(c._n_obs,), dtype=np.float32)
 
     @property
     def action_space(c):
         c.setdefaults(lc_av=False)
+        # Ensure the action type is valid
         assert c.act_type in ['discretize', 'discrete', 'continuous', 'accel', 'accel_discrete']
         if c.act_type in ['discretize', 'continuous', 'accel']:
             if not c.lc_av or c.lc_act_type == 'continuous':
+                # Continuous action space with optional lane change
                 return Box(low=c.low, high=c.high, shape=(1 + bool(c.lc_av),), dtype=np.float32)
             elif c.lc_act_type == 'discrete':
-                return Namespace(accel=Box(low=c.low, high=c.high, shape=(1,), dtype=np.float32), lc=Discrete(c.lc_av))
+                # Discrete lane change action
+                return Namespace(
+                    accel=Box(low=c.low, high=c.high, shape=(1,), dtype=np.float32),
+                    lc=Discrete(c.lc_av)
+                )
         elif c.act_type in ['discrete', 'accel_discrete']:
             if c.lc_av:
-                return Namespace(accel=Discrete(c.n_actions), lc=Discrete(c.lc_av))
+                # Discrete acceleration and lane change actions
+                return Namespace(
+                    accel=Discrete(c.n_actions),
+                    lc=Discrete(c.lc_av)
+                )
             return Discrete(c.n_actions)
 
     def on_train_start(c):
         super().on_train_start()
         if c.get('last_unbiased'):
+            # Set last layer biases to zero for specific actions
             c._model.p_head[-1].bias.data[c.lc_av:] = 0
 
     def on_step_end(c, gd_stats):
         super().on_step_end(gd_stats)
         if c.get('last_unbiased'):
+            # Maintain biases during training
             c._model.p_head[-1].bias.data[c.lc_av:] = 0
 
 if __name__ == '__main__':
     c = Ring.from_args(globals(), locals()).setdefaults(
-        n_lanes=1,
-        horizon=3000,
-        warmup_steps=1000,
-        sim_step=0.1,
-        av=1,
-        max_speed=10,
-        max_accel=0.5,
-        max_decel=0.5,
-        circumference=250,
-        circumference_max=300,
-        circumference_min=200,
-        circumference_range=None,
-        initial_space='free',
-        sigma=0.2,
+        n_lanes=1,             # Number of lanes in the ring road
+        horizon=3000,          # Total number of simulation steps
+        warmup_steps=1000,     # Number of steps before RL control starts
+        sim_step=0.1,          # Simulation time step
+        av=1,                  # Number of autonomous vehicles
+        max_speed=10,          # Maximum vehicle speed
+        max_accel=0.5,         # Maximum acceleration
+        max_decel=0.5,         # Maximum deceleration
+        circumference=250,     # Circumference of the ring road
+        circumference_max=300, # Maximum circumference
+        circumference_min=200, # Minimum circumference
+        circumference_range=None,  # Range for random circumference
+        initial_space='free',      # Initial vehicle spacing
+        sigma=0.2,                 # Driver imperfection parameter
 
-        circ_feature=False,
-        accel_feature=False,
-        act_type='accel',
-        lc_act_type='discrete',
-        low=-1,
-        high=1,
-        norm_action=True,
-        global_reward=False,
-        accel_penalty=0,
-        collision_penalty=100,
+        circ_feature=False,    # Include circumference in observations
+        accel_feature=False,   # Include acceleration in observations
+        act_type='accel',      # Type of action (acceleration control)
+        lc_act_type='discrete',# Type of lane change action
+        low=-1,                # Minimum action value
+        high=1,                # Maximum action value
+        norm_action=True,      # Normalize action values
+        global_reward=False,   # Use global reward (all vehicles)
+        accel_penalty=0,       # Penalty for acceleration changes
+        collision_penalty=100, # Penalty for collisions
 
-        n_steps=100,
-        gamma=0.999,
-        alg=PG,
-        norm_reward=True,
-        center_reward=True,
-        adv_norm=False,
-        step_save=None,
+        n_steps=100,           # Number of training steps
+        gamma=0.999,           # Discount factor
+        alg=PG,                # Learning algorithm (Policy Gradient)
+        norm_reward=True,      # Normalize rewards
+        center_reward=True,    # Center rewards
+        adv_norm=False,        # Normalize advantages
+        step_save=None,        # Steps between saving models
 
-        render=False,
+        render=False,          # Render the simulation
 
-        beta=0,
-        scale_ttc=1,
-        scale_pet=1,
-        scale_drac=1,
-        seed_np=False,
-        seed_torch = False,
-        residual_transfer=False, # this flag deals with which network to modify (nominal if False, residual if True). instantiates both.
-        mrtl=False, # this flag deals with adding beta to observations
+        beta=0,                # Weight for safety measures in reward
+        scale_ttc=1,           # Scaling factor for TTC
+        scale_pet=1,           # Scaling factor for PET
+        scale_drac=1,          # Scaling factor for DRAC
+        seed_np=False,         # Seed for NumPy
+        seed_torch=False,      # Seed for PyTorch
+        residual_transfer=False, # Modify which network (nominal/residual)
+        mrtl=False,            # Include beta in observations
     )
     if c.seed_torch:
-        # Set seed for PyTorch CPU operations
+        # Set PyTorch seed for reproducibility
         torch.manual_seed(c.seed_torch)
-        # Set seed for PyTorch CUDA operations (if available)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(c.seed_torch)
     if c.seed_np:
+        # Set NumPy seed for reproducibility
         np.random.seed(c.seed_np)
 
     if c.n_lanes == 1:
-        c.setdefaults(n_veh=22, _n_obs=3 + c.circ_feature + c.accel_feature)
+        c.setdefaults(
+            n_veh=22,  # Number of vehicles
+            _n_obs=3 + c.circ_feature + c.accel_feature  # Observation size
+        )
     elif c.n_lanes == 2:
-        c.setdefaults(n_veh=44, lc_mode=LC_MODE.no_lat_collide, symmetric=False, symmetric_action=None, lc_av=2)
+        c.setdefaults(
+            n_veh=44,
+            lc_mode=LC_MODE.no_lat_collide,
+            symmetric=False,
+            symmetric_action=None,
+            lc_av=2
+        )
         c._n_obs = (1 + 2 * 2 * 2) if c.symmetric else (1 + 2 * 5)
     elif c.n_lanes == 3:
-        c.setdefaults(n_veh=66, lc_mode=LC_MODE.no_lat_collide, symmetric=False, symmetric_action=None, lc_av=3, _n_obs=1 + 3 * (1 + 2 * 2))
+        c.setdefaults(
+            n_veh=66,
+            lc_mode=LC_MODE.no_lat_collide,
+            symmetric=False,
+            symmetric_action=None,
+            lc_av=3,
+            _n_obs=1 + 3 * (1 + 2 * 2)
+        )
     if c.mrtl:
-        c._n_obs += 1 # modified for mrtl related
+        c._n_obs += 1  # Increase observation size for mrtl
     c.step_save = c.step_save or min(5, c.n_steps // 10)
     c.redef_sumo = bool(c.circumference_range)
     c.run()
