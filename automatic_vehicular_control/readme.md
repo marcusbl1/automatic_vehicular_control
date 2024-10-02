@@ -120,7 +120,7 @@ python $F/ring.py . "e=True" "warmup_steps=2000" "skip_stat_steps=5000" \
 
 
 ## 4. TODO
-1. Batch run setup on cloud computational resources: Please refer to actual_runs.ipynb, a Jupyter notebook designed for executing batch runs and visualizing the results.
+1. Batch running setup on cloud computational resources: Please refer to actual_runs.ipynb, a Jupyter notebook designed for executing batch runs and visualizing the results.
 ### Batch Running with Slurm:
 
 Training:
