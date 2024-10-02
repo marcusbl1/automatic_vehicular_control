@@ -1,7 +1,7 @@
 gym
 lxml
-ray
-traci
+# ray
+# traci
 pyyaml
 numpy
 scipy

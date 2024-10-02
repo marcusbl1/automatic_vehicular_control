@@ -1,14 +1,19 @@
-from automatic_vehicular_control.exp import *  # Import all from experimental utilities
-from automatic_vehicular_control.env import *  # Import all from environment utilities
-from automatic_vehicular_control.u import *    # Import all from utility functions
+# from automatic_vehicular_control.exp import *  # Import all from experimental utilities
+# from automatic_vehicular_control.env import *  # Import all from environment utilities
+# from automatic_vehicular_control.u import *    # Import all from utility functions
 
+from exp import *  # Import all from experimental utilities
+from env import *  # Import all from environment utilities
+from u import *    # Import all from utility functions
+
+# Define the RingEnv class which inherits from the Env class
 class RingEnv(Env):
     def def_sumo(self):
-        c = self.c  # Configuration object
-        r = c.circumference / (2 * np.pi)  # Calculate the radius of the ring road
+        c = self.c  # Access configuration object
+        r = c.circumference / (2 * np.pi)  # Calculate the radius of the ring road based on circumference
         nodes = E('nodes',
-            E('node', id='bottom', x=0, y=-r),  # Define bottom node at (0, -r)
-            E('node', id='top', x=0, y=r),      # Define top node at (0, r)
+            E('node', id='bottom', x=0, y=-r),  # Define bottom node at coordinates (0, -r)
+            E('node', id='top', x=0, y=r),      # Define top node at coordinates (0, r)
         )
 
         # Function to generate the shape of the edges (circular arcs)
@@ -19,22 +24,22 @@ class RingEnv(Env):
                 'id': 'right',
                 'from': 'bottom',
                 'to': 'top',
-                'length': c.circumference / 2,
-                'shape': get_shape(-np.pi / 2, np.pi / 2),
-                'numLanes': c.n_lanes
+                'length': c.circumference / 2,  # Edge length is half the circumference
+                'shape': get_shape(-np.pi / 2, np.pi / 2),  # Define the right side of the ring road
+                'numLanes': c.n_lanes  # Number of lanes
             }),
             E('edge', **{
                 'id': 'left',
                 'from': 'top',
                 'to': 'bottom',
-                'length': c.circumference / 2,
+                'length': c.circumference / 2,  # Define left side of the ring road
                 'shape': get_shape(np.pi / 2, np.pi * 3 / 2),
                 'numLanes': c.n_lanes
             }),
         )
 
         connections = E('connections',
-            # Create lane connections from 'left' to 'right' and vice versa
+            # Create lane connections from 'left' to 'right' and vice versa for all lanes
             *[E('connection', **{
                 'from': 'left',
                 'to': 'right',
@@ -50,25 +55,25 @@ class RingEnv(Env):
         )
 
         additional = E('additional',
-            # Define human-driven vehicle type with specific parameters
+            # Define the vehicle type for human-driven vehicles using specific driving parameters
             E('vType', id='human', **{
                 **IDM, **LC2013, **dict(
                     accel=1,
                     decel=1.5,
                     minGap=2,
-                    sigma=c.sigma
+                    sigma=c.sigma  # Driver imperfection parameter
                 )
             }),
-            # Define RL-controlled vehicle type with specific parameters
+            # Define the vehicle type for RL-controlled vehicles
             E('vType', id='rl', **{
                 **IDM, **LC2013, **dict(
                     accel=1,
                     decel=1.5,
                     minGap=2,
-                    sigma=0  # No randomness in driving behavior
+                    sigma=0  # No randomness in RL vehicles
                 )
             }),
-            # Build a closed route with specified number of vehicles and spacing
+            # Build a closed route on the ring road with the specified number of vehicles
             *build_closed_route(
                 edges,
                 c.n_veh,
@@ -76,51 +81,50 @@ class RingEnv(Env):
                 space=c.initial_space
             )
         )
-        return super().def_sumo(nodes, edges, connections, additional)
+        return super().def_sumo(nodes, edges, connections, additional)  # Call the base class method
 
     def reset_sumo(self):
         c = self.c
-        if c.circumference_range:
+        if c.circumference_range:  # Check if the circumference should be randomized
             # Randomly set the circumference within the specified range
             c.circumference = np.random.randint(*c.circumference_range)
-        return super().reset_sumo()
+        return super().reset_sumo()  # Reset the simulation
 
     @property
     def stats(self):
-        c = self.c # configuration
-        # Collect statistics excluding flow-related ones
+        c = self.c # Get the configuration object
+        # Gather environment statistics excluding flow-related stats
         stats = {
             k: v
             for k, v in super().stats.items()
             if 'flow' not in k
         }
-        stats['circumference'] = c.circumference  # Include current circumference
-        stats['beta'] = c.beta                    # Include beta parameter
+        stats['circumference'] = c.circumference  # Add the current circumference to the stats
+        stats['beta'] = c.beta                    # Add the beta parameter
         return stats
 
     def step(self, action=None):
-        c = self.c
+        c = self.c  # Configuration object
         ts = self.ts  # Time step object
-        max_speed = c.max_speed
-        circ_max = max_dist = c.circumference_max
-        circ_min = c.circumference_min
+        max_speed = c.max_speed  # Max vehicle speed
+        circ_max = max_dist = c.circumference_max  # Max circumference for normalization
+        circ_min = c.circumference_min  # Min circumference for normalization
         rl_type = ts.types.rl  # RL-controlled vehicle type
 
-        if not rl_type.vehicles:
-            # If there are no RL vehicles, proceed without action
+        if not rl_type.vehicles:  # If no RL vehicles are present, proceed without action
             super().step()
             return c.observation_space.low, 0, False, 0
 
         rl = nexti(rl_type.vehicles)  # Get the first RL-controlled vehicle
-        if action is not None:  # Only proceed if action is provided (not immediately after reset)
-            ts.tc.vehicle.setMinGap(rl.id, 0)  # Set minimal gap to 0 to prevent collision during warm-up
+        if action is not None:  # If an action is provided
+            ts.tc.vehicle.setMinGap(rl.id, 0)  # Set minimal gap to prevent collisions
             # Extract acceleration and lane change components from the action
             accel, lc = (
                 (action, None) if not c.lc_av else
                 action if c.lc_act_type == 'continuous' else
                 (action['accel'], action['lc'])
             )
-            if isinstance(accel, np.ndarray): accel = accel.item()  # Convert numpy array to scalar
+            if isinstance(accel, np.ndarray): accel = accel.item()  # Convert np.array to scalar
             if isinstance(lc, np.ndarray): lc = lc.item()
             if c.norm_action and isinstance(accel, (float, np.floating)):
                 # Normalize acceleration action
@@ -129,15 +133,13 @@ class RingEnv(Env):
                 # Normalize lane change action
                 lc = bool(np.round((lc - c.low) / (c.high - c.low)))
 
-            if c.get('handcraft'):
-                # Apply handcrafted control policies if specified
+            if c.get('handcraft'):  # Apply handcrafted control if specified
                 accel = (0.75 * np.sign(c.handcraft - rl.speed) + 1) / 2
                 lc = True
                 if c.get('handcraft_lc'):
-                    if c.handcraft_lc == 'off':
+                    if c.handcraft_lc == 'off':  # No lane change
                         lc = False
-                    elif c.handcraft_lc == 'stabilize':
-                        # Determine whether to change lanes based on surrounding vehicles
+                    elif c.handcraft_lc == 'stabilize':  # Stabilize the lane
                         other_lane = rl.lane.left or rl.lane.right
                         oleader, odist = other_lane.next_vehicle(rl.laneposition, route=rl.route)
                         ofollower, ofdist = other_lane.prev_vehicle(rl.laneposition, route=rl.route)
@@ -146,18 +148,18 @@ class RingEnv(Env):
                         else:
                             lc = False
 
-            # Apply acceleration or speed control based on action type
+            # Apply acceleration or speed control based on the action type
             if c.act_type == 'accel_discrete':
-                ts.accel(rl, accel / (c.n_actions - 1))
+                ts.accel(rl, accel / (c.n_actions - 1))  # Discrete acceleration
             elif c.act_type == 'accel':
                 if c.norm_action:
-                    # Scale acceleration to match maximum acceleration/deceleration
+                    # Scale the acceleration to match the maximum acceleration or deceleration
                     accel = (accel * 2 - 1) * (
                         c.max_accel if accel > 0.5 else c.max_decel
                     )
-                ts.accel(rl, accel)
+                ts.accel(rl, accel)  # Continuous acceleration
             else:
-                # Set vehicle's maximum speed
+                # Set the vehicle's maximum speed based on the action
                 if c.act_type == 'continuous':
                     level = accel
                 elif c.act_type == 'discretize':
@@ -168,42 +170,40 @@ class RingEnv(Env):
                 elif c.act_type == 'discrete':
                     level = accel / (c.n_actions - 1)
                 ts.set_max_speed(rl, max_speed * level)
-            if c.n_lanes > 1:
+            if c.n_lanes > 1:  # Handle lane changes if there are multiple lanes
                 if c.symmetric_action if c.symmetric_action is not None else c.symmetric:
                     if lc:
-                        # Perform lane change in a symmetric manner
+                        # Perform a symmetric lane change (left or right based on lane index)
                         ts.lane_change(rl, -1 if rl.lane_index % 2 else +1)
                 else:
                     # Change to a specific lane
                     ts.lane_change_to(rl, lc)
 
-        super().step()  # Advance the simulation by one time step
+        super().step()  # Advance the simulation by one step
 
-        if len(ts.new_arrived | ts.new_collided):
-            # Check for collisions
+        if len(ts.new_arrived | ts.new_collided):  # Check for collisions
             print('Detected collision')
             return c.observation_space.low, -c.collision_penalty, True, None
-        elif len(ts.vehicles) < c.n_veh:
-            # Check for missing vehicles (bad initialization)
+        elif len(ts.vehicles) < c.n_veh:  # Check for missing vehicles
             print('Bad initialization occurred, fix the initialization function')
             return c.observation_space.low, 0, True, None
 
         leader, dist = rl.leader()  # Get the leader vehicle and headway distance
         if c.n_lanes == 1:
-            # Single-lane observation space
+            # Single-lane observation space representation
             obs = [
-                rl.speed / max_speed,           # RL vehicle's speed
-                leader.speed / max_speed,       # Leader's speed
-                dist / max_dist                 # Headway distance
+                rl.speed / max_speed,           # Normalized RL vehicle speed
+                leader.speed / max_speed,       # Normalized leader vehicle speed
+                dist / max_dist                 # Normalized headway distance
             ]
             if c.circ_feature:
-                # Include normalized circumference feature
+                # Add normalized circumference feature
                 obs.append((c.circumference - circ_min) / (circ_max - circ_min))
             if c.accel_feature:
-                # Include leader's acceleration feature
+                # Add leader acceleration feature
                 obs.append(0 if leader.prev_speed is None else (leader.speed - leader.speed) / max_speed)
         elif c.n_lanes == 2:
-            # Two-lane observation space
+            # Two-lane observation space representation
             lane = rl.lane
             follower, fdist = rl.follower()  # Get follower vehicle and distance
             if c.symmetric:
@@ -212,19 +212,10 @@ class RingEnv(Env):
                 oleader, odist = other_lane.next_vehicle(rl.laneposition, route=rl.route)
                 ofollower, ofdist = other_lane.prev_vehicle(rl.laneposition, route=rl.route)
                 obs = np.concatenate([
-                    np.array([
-                        rl.speed,
-                        leader.speed,
-                        oleader.speed,
-                        follower.speed,
-                        ofollower.speed
-                    ]) / max_speed,
-                    np.array([
-                        dist,
-                        odist,
-                        fdist,
-                        ofdist
-                    ]) / max_dist
+                    # Normalized speeds of vehicles in the current and other lane
+                    np.array([rl.speed, leader.speed, oleader.speed, follower.speed, ofollower.speed]) / max_speed,
+                    # Normalized distances to the leader and follower vehicles
+                    np.array([dist, odist, fdist, ofdist]) / max_dist
                 ])
             else:
                 # Asymmetric lane observations
@@ -232,109 +223,81 @@ class RingEnv(Env):
                 for lane in rl.edge.lanes:
                     is_rl_lane = lane == rl.lane
                     if is_rl_lane:
-                        obs.extend([
-                            is_rl_lane,
-                            dist,
-                            leader.speed,
-                            fdist,
-                            follower.speed
-                        ])
+                        # Observations for the lane in which RL vehicle is currently present
+                        obs.extend([is_rl_lane, dist, leader.speed, fdist, follower.speed])
                     else:
+                        # Observations for the other lane
                         oleader, odist = lane.next_vehicle(rl.laneposition, route=rl.route)
                         ofollower, ofdist = lane.prev_vehicle(rl.laneposition, route=rl.route)
-                        obs.extend([
-                            is_rl_lane,
-                            odist,
-                            oleader.speed,
-                            ofdist,
-                            ofollower.speed
-                        ])
-                # Normalize the observation
-                obs = np.array(obs) / [
-                    max_speed,
-                    *([1, max_dist, max_speed, max_dist, max_speed] * 2)
-                ]
+                        obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
+                # Normalize the observations
+                obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 2)]
         else:
-            # Multi-lane observation space
+            # Multi-lane observation space representation (for more than two lanes)
             obs = [rl.speed]
             follower, fdist = rl.follower()
             for lane in rl.edge.lanes:
                 is_rl_lane = lane == rl.lane
                 if is_rl_lane:
-                    obs.extend([
-                        is_rl_lane,
-                        dist,
-                        leader.speed,
-                        fdist,
-                        follower.speed
-                    ])
+                    # Observations for the current lane
+                    obs.extend([is_rl_lane, dist, leader.speed, fdist, follower.speed])
                 else:
+                    # Observations for other lanes
                     oleader, odist = lane.next_vehicle(rl.laneposition, route=rl.route)
                     ofollower, ofdist = lane.prev_vehicle(rl.laneposition, route=rl.route)
-                    obs.extend([
-                        is_rl_lane,
-                        odist,
-                        oleader.speed,
-                        ofdist,
-                        ofollower.speed
-                    ])
-            # Normalize the observation
-            obs = np.array(obs) / [
-                max_speed,
-                *([1, max_dist, max_speed, max_dist, max_speed] * 3)
-            ]
+                    obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
+            # Normalize the observations
+            obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 3)]
+
         if c.mrtl:
-            # If mrtl is enabled, include beta in observations
+            # If mrtl is enabled, add beta to observations
             obs = np.concatenate([obs, np.array([c.beta])])
-        # Clip and scale observations to specified range
+        # Clip and scale observations to the specified range
         obs = np.clip(obs, 0, 1) * (1 - c.low) + c.low
-        # Compute reward based on average speed
-        reward = np.mean([
-            v.speed for v in (
-                ts.vehicles if c.global_reward else rl_type.vehicles
-            )
-        ])
+
+        # Compute reward based on average speed of all vehicles or only RL-controlled vehicles
+        reward = np.mean([v.speed for v in (ts.vehicles if c.global_reward else rl_type.vehicles)])
         if c.accel_penalty and hasattr(self, 'last_speed'):
             # Apply penalty for acceleration changes
             reward -= c.accel_penalty * np.abs(rl.speed - self.last_speed) / c.sim_step
 
-        self.last_speed = rl.speed  # Update last speed
+        self.last_speed = rl.speed  # Update last speed for next step
 
-        speed_reward = np.clip(reward / max_speed, -1, 1)  # Normalize speed reward
+        speed_reward = np.clip(reward / max_speed, -1, 1)  # Normalize speed reward to range [-1, 1]
 
         # Calculate safety surrogate measures
         raw_ttc, raw_drac = self.calc_ttc(), self.calc_drac()
-        ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # Use default if NaN
-        ttc = np.clip(ttc / 7, -1, 1)
-        drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4
-        drac = np.clip(drac / 10, -1, 1)
+        ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # Log-transform TTC; default value if NaN
+        ttc = np.clip(ttc / 7, -1, 1)  # Normalize TTC to range [-1, 1]
+        drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4  # Log-transform DRAC; default value if NaN
+        drac = np.clip(drac / 10, -1, 1)  # Normalize DRAC to range [-1, 1]
 
         raw_pet = self.calc_pet()
-        pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6
-        pet = np.clip(pet, -1, 1)
+        pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6  # Log-transform PET; default value if NaN
+        pet = np.clip(pet, -1, 1)  # Normalize PET to range [-1, 1]
 
-        # Combine safety measures into a single value
+        # Combine safety measures into a single value for the reward
         ssm = (c.scale_ttc * ttc - c.scale_drac * drac) / 2
-        # Compute final reward combining speed and safety
+        # Compute the final reward by combining speed and safety rewards, weighted by beta
         reward = (1 - c.beta) * speed_reward + c.beta * ssm
 
+        # Return observations, reward, and other rollout information
         returned = dict(
             obs=obs.astype(np.float32),  # Observations
-            reward=reward,               # Final reward
-            speed_reward=speed_reward,   # Speed component of the reward
-            ttc=ttc,                     # Time to collision
+            reward=reward,               # Final reward value
+            speed_reward=speed_reward,   # Component of reward due to speed
+            ttc=ttc,                     # Time to collision value
             drac=drac,                   # Deceleration rate to avoid collision
             pet=pet,                     # Post-encroachment time
-            ssm=ssm,                     # Safety surrogate measure
+            ssm=ssm,                     # Combined safety surrogate measure
             raw_ttc=raw_ttc,             # Raw TTC value
             raw_drac=raw_drac,           # Raw DRAC value
             raw_pet=raw_pet              # Raw PET value
-        ) 
+        )
         return returned
-        # return obs.astype(np.float32), reward, False, None, ttc
 
+    # Calculate the average Time to Collision (TTC) for all vehicles
     def calc_ttc(self):
-        # Calculate the average Time to Collision (TTC) for all vehicles
         cur_veh_list = self.ts.vehicles
         ttcs = []
         for v in cur_veh_list:
@@ -342,52 +305,54 @@ class RingEnv(Env):
             v_speed = v.speed
             leader_speed = leader.speed
             if leader_speed < v_speed:
-                ttc = headway / (v_speed - leader_speed)
+                ttc = headway / (v_speed - leader_speed)  # Calculate TTC if leader speed is less than current vehicle speed
             else:
-                ttc = np.nan  # Undefined if leader is faster or same speed
+                ttc = np.nan  # TTC is undefined if leader is faster or at the same speed
             ttcs.append(ttc)
-        fleet_ttc = np.nanmean(np.array(ttcs))  # Average TTC, ignoring NaNs
+        fleet_ttc = np.nanmean(np.array(ttcs))  # Average TTC, ignoring NaN values
         return fleet_ttc
-        
+
+    # Calculate the average Deceleration Rate to Avoid Collision (DRAC) for all vehicles
     def calc_drac(self):
-        # Calculate the average Deceleration Rate to Avoid Collision (DRAC) for all vehicles
         cur_veh_list = self.ts.vehicles
         dracs = []
         for v in cur_veh_list:
             leader, headway = v.leader()
             v_speed = v.speed
             leader_speed = leader.speed
-            drac = 0.5 * np.square(v_speed - leader_speed) / headway
+            drac = 0.5 * np.square(v_speed - leader_speed) / headway  # Calculate DRAC based on speed difference and headway
             dracs.append(drac)
-        fleet_drac = np.nanmean(np.array(dracs))  # Average DRAC, ignoring NaNs
+        fleet_drac = np.nanmean(np.array(dracs))  # Average DRAC, ignoring NaN values
         return fleet_drac
 
+    # Calculate the average Post-Encroachment Time (PET) for all vehicles
     def calc_pet(self):
-        # Calculate the average Post-Encroachment Time (PET) for all vehicles
         cur_veh_list = self.ts.vehicles
         pets = []
         for v in cur_veh_list:
             leader, headway = v.leader()
             v_speed = v.speed
-            if v_speed > 1e-16:
+            if v_speed > 1e-16:  # Avoid division by zero
                 pet = headway / v_speed
                 pets.append(pet)
-        fleet_pet = np.nanmean(np.array(pets))  # Average PET, ignoring NaNs
+        fleet_pet = np.nanmean(np.array(pets))  # Average PET, ignoring NaN values
         return fleet_pet
 
+# Define the Ring class which inherits from the Main class
 class Ring(Main):
+    # Method to create and return the environment
     def create_env(c):
-        # Create the normalized environment with the RingEnv
         return NormEnv(c, RingEnv(c))
 
+    # Property to define the observation space for the RL agent
     @property
     def observation_space(self):
-        # Define the observation space for the RL agent
         return Box(low=0, high=1, shape=(c._n_obs,), dtype=np.float32)
 
+    # Property to define the action space for the RL agent
     @property
     def action_space(c):
-        c.setdefaults(lc_av=False)
+        c.setdefaults(lc_av=False)  # Set default for lane changing availability
         # Ensure the action type is valid
         assert c.act_type in ['discretize', 'discrete', 'continuous', 'accel', 'accel_discrete']
         if c.act_type in ['discretize', 'continuous', 'accel']:
@@ -409,18 +374,20 @@ class Ring(Main):
                 )
             return Discrete(c.n_actions)
 
+    # Override on_train_start to set last layer biases if specified
     def on_train_start(c):
         super().on_train_start()
         if c.get('last_unbiased'):
             # Set last layer biases to zero for specific actions
             c._model.p_head[-1].bias.data[c.lc_av:] = 0
 
+    # Override on_step_end to maintain biases during training if specified
     def on_step_end(c, gd_stats):
         super().on_step_end(gd_stats)
         if c.get('last_unbiased'):
-            # Maintain biases during training
             c._model.p_head[-1].bias.data[c.lc_av:] = 0
 
+# Main entry point to define configurations and run the experiment
 if __name__ == '__main__':
     c = Ring.from_args(globals(), locals()).setdefaults(
         n_lanes=1,             # Number of lanes in the ring road
@@ -468,15 +435,16 @@ if __name__ == '__main__':
         residual_transfer=False, # Modify which network (nominal/residual)
         mrtl=False,            # Include beta in observations
     )
+
+    # Set seeds for reproducibility if specified
     if c.seed_torch:
-        # Set PyTorch seed for reproducibility
         torch.manual_seed(c.seed_torch)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(c.seed_torch)
     if c.seed_np:
-        # Set NumPy seed for reproducibility
         np.random.seed(c.seed_np)
 
+    # Set number of vehicles and observation size based on the number of lanes
     if c.n_lanes == 1:
         c.setdefaults(
             n_veh=22,  # Number of vehicles
@@ -485,7 +453,7 @@ if __name__ == '__main__':
     elif c.n_lanes == 2:
         c.setdefaults(
             n_veh=44,
-            lc_mode=LC_MODE.no_lat_collide,
+            lc_mode=LC_MODE.no_lat_collide, # No lateral collision mode
             symmetric=False,
             symmetric_action=None,
             lc_av=2
@@ -494,7 +462,7 @@ if __name__ == '__main__':
     elif c.n_lanes == 3:
         c.setdefaults(
             n_veh=66,
-            lc_mode=LC_MODE.no_lat_collide,
+            lc_mode=LC_MODE.no_lat_collide, # No lateral collision mode
             symmetric=False,
             symmetric_action=None,
             lc_av=3,
@@ -502,6 +470,7 @@ if __name__ == '__main__':
         )
     if c.mrtl:
         c._n_obs += 1  # Increase observation size for mrtl
-    c.step_save = c.step_save or min(5, c.n_steps // 10)
-    c.redef_sumo = bool(c.circumference_range)
-    c.run()
+
+    c.step_save = c.step_save or min(5, c.n_steps // 10)  # Set step save interval
+    c.redef_sumo = bool(c.circumference_range)  # Redefine sumo if random circumference range is given
+    c.run()  # Run the experiment

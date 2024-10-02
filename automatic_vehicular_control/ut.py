@@ -1,7 +1,8 @@
 import scipy.signal
 from gym.spaces import Box, Discrete
 
-from automatic_vehicular_control.u import *
+# from automatic_vehicular_control.u import *
+from u import *
 
 def discount(x, gamma):
     if isinstance(x, torch.Tensor):

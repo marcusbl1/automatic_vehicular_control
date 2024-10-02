@@ -1,5 +1,8 @@
-from automatic_vehicular_control.u import Config
-from automatic_vehicular_control.ut import *
+# from automatic_vehicular_control.u import Config
+# from automatic_vehicular_control.ut import *
+
+from u import Config
+from ut import *
 
 class Main(Config):
     # Set the base path for flow results, using the environment variable 'F'
@@ -372,7 +375,7 @@ class Main(Config):
             adv_mean=np.mean(adv) if c.use_critic else None,
             explained_variance=explained_variance(value_[:len(ret)], ret) if c.use_critic else None
         )
-        log(rollout_end_time=time() - t_start)
+        log(rollout_end_time = time() - t_start)
         return rollout
 
     def on_step_end(c, stats={}):
@@ -438,9 +441,9 @@ class Main(Config):
             if c.get('result_save'):
                 c._results.to_csv(c.result_save)
             if c.get('vehicle_info_save'):
-                np.savez_compressed(c.vehicle_info_save, **{k: v.values.astype(type(v.iloc[0])) for k, v in c._env.vehicle_info.iteritems()})
+                np.savez_compressed(c.vehicle_info_save, **{k: v.values.astype(type(v.iloc[0])) for k, v in c._env.vehicle_info.items()})
                 if c.get('save_agent'):
-                    np.savez_compressed(c.vehicle_info_save.replace('.npz', '_agent.npz'), **{k: v.values.astype(type(v.iloc[0])) for k, v in c._env.agent_info.iteritems()})
+                    np.savez_compressed(c.vehicle_info_save.replace('.npz', '_agent.npz'), **{k: v.values.astype(type(v.iloc[0])) for k, v in c._env.agent_info.items()})
                 c._env.sumo_paths['net'].cp(c.vehicle_info_save.replace('.npz', '.net.xml'))
             c._i += 1
             c.log('')
