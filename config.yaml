@@ -1,16 +1,13 @@
-alg: TRPO
-beta: 1
-gamma: 0.9995
-global_reward: true
-horizon: 2000
-n_rollouts_per_step: 10
-n_steps: 100
-n_workers: 10
+circumference: 250
+full_rollout_only: true
+horizon: 1000
+n_rollouts_per_step: 1
+n_steps: 10
+result_save: evaluations/test.csv
 save_agent: true
-skip_stat_steps: 2000
+skip_stat_steps: 5000
+skip_vehicle_info_stat_steps: false
 tb: true
-use_critic: false
-warmup_steps: 500
+vehicle_info_save: trajectories/test.npz
+warmup_steps: 2000
 wb: false
-worker_kwargs:
-- circumference: 250

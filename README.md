@@ -1,41 +1,27 @@
-# Unified Automatic Control of Vehicular Systems With Reinforcement Learning
-This repo contains the code and model checkpoints for our IEEE T-ASE (presented at IROS 2022) paper *Unified Automatic Control of Vehicular Systems with Reinforcement Learning*. Videos of results can be found on our [project website](https://mit-wu-lab.github.io/automatic_vehicular_control).
+# Project Environment Setup
 
-# Relevant Links
-You may find this project at: [Project Website](https://mit-wu-lab.github.io/automatic_vehicular_control), [IEEE Website](https://ieeexplore.ieee.org/document/9765650), [arXiv](https://arxiv.org/abs/2208.00268).
+This project uses Python with several dependencies managed by `conda`. Follow the instructions below to set up your development environment.
 
-```
-@article{yan2022unified,
-  title={Unified Automatic Control of Vehicular Systems With Reinforcement Learning},
-  author={Yan, Zhongxia and Kreidieh, Abdul Rahman and Vinitsky, Eugene and Bayen, Alexandre M and Wu, Cathy},
-  journal={IEEE Transactions on Automation Science and Engineering},
-  year={2022},
-  publisher={IEEE}
-}
-```
+Updated date: Oct 2nd 2024.
 
-## Installation
-Clone this repo with
-```
-git clone https://github.com/mit-wu-lab/automatic_vehicular_control.git
-```
+## Requirements
 
-Installation instructions are provided for MacOS and Ubuntu 14.04, 16.04, and 18.04. For microscopic traffic simulations, we use the SUMO simulator with version 1.1.0 (which unfortunately is quite outdated by now); the same code may work on newer SUMO versions (we didn't test it). We require Python 3.8+.
-1. Run `bash setup/setup_sumo_<os_version>.sh` corresponding to your OS version to set up SUMO and add `~/sumo_binaries/bin` to your `SUMO_HOME` and `PATH` environment variables. Try running `sumo` and `sumo-gui` (if you'd like to use GUI). Note that GUI probably does not work on servers and may only work on local computers. For Mac installation issues, please refer to `setup/setup_issues_osx.md`. **Update**: due to MacOS `brew` updates, it could be very difficult to install the correct versions of packages for SUMO 1.1.0 on MacOS, so Ubuntu is recommended; for MacOS, you may consider installing `gdal` with `conda install -c conda-forge gdal=2.4.2` and download the `ffmpeg=4.4.1` library files (within the `tar.bz2`) from [conda-forge](https://anaconda.org/conda-forge/ffmpeg/files?version=4.4.1) directly instead of trying to use `brew`.
-2. Note: the previous SUMO installation actually installs a SUMO version which does not support IDM with Gaussian noise. If you'd like to use Gaussian noise (which is what we use in the paper but does not significantly affect results), you can build the forked version of SUMO 1.1.0 at https://github.com/ZhongxiaYan/sumo.
-3. If needed, follow instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) to install Miniconda, likely `wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh` followed by `bash Miniconda3-latest-Linux-x86_64.sh`.
-4. If desired, create and activate a new conda environment following these [instructions](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands).
-5. If needed, install PyTorch (1.7+) from [pytorch.org](pytorch.org).
-6. If needed, install missing Python dependencies `pip install -r requirements.txt`.
+To use this project, ensure you have the following installed:
 
-Install this repo with
-```
-pip install -e .
+- [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+- [SUMO](https://sumo.dlr.de/docs/Installing/MacOS_Build.html)
+
+## 1. Setup
+
+### 1.1 Create the Conda Environment
+
+Use the `environment.yml` file to create a new `conda` environment with all required dependencies. Run the following command:
+
+```sh
+conda env create -f environment.yml
 ```
 
-For all training and evaluation commands, model checkpoints, and evaluation results, download and unzip https://www.dropbox.com/s/l83qkw8qvimqg62/results.zip?dl=0 (file size of around 4G).
-
-Set the environmental variables
+### 1.2 Set the environmental variables
 ```
 # Code directory
 export F=automatic_vehicular_control/automatic_vehicular_control
@@ -44,51 +30,129 @@ export F=automatic_vehicular_control/automatic_vehicular_control
 export R=results
 ```
 
-## Directory Structure
+## 2. Directory Structure
 
 The code directory structure is
 ```
-$F (automatic_vehicular_control)
- ├─ exp.py  # The base experiment class and helpers
- ├─ env.py  # The base environment class and helpers
- ├─ ut.py  # RL-related utility functions
- ├─ u.py  # General utility functions
- │  # Scenario specific experiment/environment classes
- └─ [ring, figure_eight, highway_bottleneck, highway_ramp, intersection].py
+automatic_vehicular_control/
+│
+├── automatic_vehicular_control/
+│   ├── __pycache__/                # Compiled Python files
+│   ├── evaluations/                # Evaluation results and metrics
+│   ├── models/                     # Model checkpoints
+│   ├── pareto/
+│   │   └── single_ring/            # Experiments for the single-ring traffic scenario
+│   │       ├── from_scratch/       # Training from scratch experiments
+│   │       ├── seeding/            # Experiments with different random seeds
+│   │       └── ssm_scaling_5/      # Experiments with different SSM scaling weights
+│   ├── sumo/                       # SUMO simulation-related files
+│   ├── __init__.py                 # Package initialization script
+│   ├── *.log                       # Log files for experiment runs
+│   ├── actual_runs.ipynb           # Jupyter notebook for executing and plotting experiments
+│   ├── config.yaml                 # Configuration file for experiments
+│   ├── env.py                      # Environment setup and classes
+│   ├── environment.yml             # Conda environment setup
+│   ├── eval_commands.sh            # Shell script for running evaluations
+│   ├── exp.py                      # Experiment setup script
+│   ├── ring.py                     # Main script for running the ring road environment
+│   ├── ut.py                       # Definie algo and NN related func
+│   ├── u.py                        # Definie help func
+
 ```
 
-The results directory structure is
-```
-$R (results)
-└─ [ring, figure_eight, highway_bottleneck, highway_ramp, intersection]
-    ├─ plots  # Symbolic links to evaluations, organized for plotting
-    │    │
-    │    │  # Specific evaluation setting
-    │    ├─ <e.g. Ours (DRL) horizontal_inflow=1000 vertical_inflow=1000>
-    │    │    ├─ evaluation.csv  # Recorded stats
-    │    │    ├─ trajectories.npz  # Recorded vehicle trajectories
-    │    │    ├─ trajectories_agent.npz  # Recorded agent actions
-    │    │    └─ trajectories.net.xml  # Recorded traffic network
-    │    └─ ...
-    ├─ baselines  # Evaluations of human driving baseline
-    ├─ derived  # Evaluations of derived control policy
-    │
-    │  # Checkpoints and evaluations of RL-based policy
-    ├─ <e.g. multiflow16_av0.333_horizon2000>
-    │    ├─ train_command.sh  # Training command for RL-based policies
-    │    ├─ eval_commands.sh  # All evaluation commands
-    │    ├─ config.yaml  # Recorded parameters
-    │    ├─ models/*.pth  # Saved PyTorch model checkpoints
-    │    ├─ train_results.csv  # Training statistics
-    │    ├─ evaluations/*.csv  # Recorded evaluation statistics
-    │    │
-    │    │  # Recorded evaluation trajectories, agent actions, and traffic network
-    │    └─ trajectories/*.[npz,xml]
-    └─ ...
-```
-**Note that the training and evaluation commands are included in the zipped results directory detailed above.**
 
-# Training and Evaluation
-Given any experiment directory `$EXP_DIR` in the zipped results directory, run the commands in `$EXP_DIR/train_command.sh` and `$EXP_DIR/eval_commands.sh`, for training and evaluation. Training uses around 45-48 parallel workers for rollout collection, which should be adjusted accordingly based on computational budget.
+## 3. Code running
+### 3.1 Training Command:
+```
+python $F/ring.py $F/pareto/single_ring/seeding/beta1.0_SSM1_torch23558_np1409397498 \
+"worker_kwargs=[{'circumference': 250}]" "n_workers=1" "n_rollouts_per_step=45" \
+"warmup_steps=2000" "skip_stat_steps=5000" "horizon=5000" "global_reward=True" "n_steps=400" \
+"alg='TRPO'" "use_critic=False" "gamma=0.9995" "beta=1.0" "scale_ttc=1" "scale_drac=1" \
+"seed_np=1409397498" "seed_torch=23558" "residual_transfer=False" "mrtl=False" \
+"handcraft=False" "step_save=False" "lr=0.0001" "wb=False" "tb=False" 
+```
 
-Note that Baseline and Derived are not learning-based, so there is no need to run training for them.
+#### Explanation of Arguments:
+- **$F/ring.py**: Path to the main running script.
+- **pareto/single_ring/seeding/beta1.0_SSM1_torch23558_np1409397498**: Output directory for storing results.
+- **worker_kwargs**: Configuration details for workers, e.g., setting the circumference of the ring.
+- **n_workers**: Number of workers to use in parallel for rollouts.  
+- **n_rollouts_per_step**: Number of rollouts per training step.  
+- **warmup_steps**: Number of warmup steps before training begins.  
+- **skip_stat_steps**: Number of steps to skip before collecting statistical data.  
+- **horizon**: Number of simulation steps in an episode.  
+- **global_reward**: Whether to use a global reward for training (`True` or `False`).
+- **n_steps**: Number of gradient update steps during training.  
+- **alg**: The RL algorithm to be used.  
+- **use_critic**: Specify if a critic is used (`True` or `False`).
+- **gamma**: Discount factor for future rewards.  
+- **beta**: Weight for balancing safety and performance metrics.  
+- **scale_ttc**, **scale_drac**: Scaling factors for safety measures like Time to Collision (TTC) and Deceleration Rate to Avoid Collision (DRAC).
+- **seed_np**, **seed_torch**: Random seeds for reproducibility.  
+- **residual_transfer**, **mrtl**, **handcraft**: Additional training configurations.
+- **step_save**: Whether to save the model at each training step (`True` or `False`).
+- **lr**: Learning rate for training.  
+- **wb**, **tb**: Enable or disable logging with Weights & Biases (`wb`) and TensorBoard (`tb`) (`True` or `False`).
+
+Each parameter has a specific role in controlling the training process, and modifying them can lead to different training outcomes, depending on the training scenario and requirements.
+
+### 3.2 Evaluation Command:
+
+```
+python $F/ring.py . "e=True" "warmup_steps=2000" "skip_stat_steps=5000" \
+"horizon=1000" "circumference=250" "n_steps=10" "n_rollouts_per_step=1" \
+"skip_vehicle_info_stat_steps=False" "full_rollout_only=True" \
+"result_save=$F/evaluations/test.csv" "vehicle_info_save=trajectories/test.npz" \
+"save_agent=True"
+```
+
+### 3.3 Different veh number
+```
+python $F/ring_different_veh.py $F/pareto/single_ring/different_veh \
+"worker_kwargs=[{'circumference': 250}]" "n_workers=1" "n_rollouts_per_step=45" \
+"warmup_steps=2000" "skip_stat_steps=5000" "horizon=5000" "global_reward=True" "n_steps=400" \
+"alg='TRPO'" "use_critic=False" "gamma=0.9995" "beta=1.0" "scale_ttc=1" "scale_drac=1" \
+"seed_np=1409397498" "seed_torch=23558" "residual_transfer=False" "mrtl=False" \
+"handcraft=False" "step_save=False" "lr=0.0001" "wb=False" "tb=False" 
+
+```
+
+
+#### Explanation of Arguments
+
+- **$F/ring.py**: Path to the running script.
+- **"."**: Represents the current directory as the output directory for storing evaluation results.
+- **e**: Specifies evaluation mode (`True`). This enables evaluation without further training.
+- **warmup_steps**: Number of warmup steps before starting the evaluation.
+- **skip_stat_steps**: Number of steps to skip before collecting statistical data during evaluation.
+- **horizon**: Number of simulation steps in an episode for evaluation.
+- **circumference**: Circumference of the ring road environment.
+- **n_steps**: Number of evaluation steps to be performed.
+- **n_rollouts_per_step**: Number of rollouts per evaluation step.
+- **skip_vehicle_info_stat_steps**: Whether to skip recording vehicle information statistics for the first few steps (`True` or `False`).
+- **full_rollout_only**: Whether to consider only complete rollouts for evaluation (`True` or `False`).
+- **result_save**: Path to save the evaluation results as a CSV file.
+- **vehicle_info_save**: Path to save vehicle trajectory data in `.npz` format.
+- **save_agent**: Whether to save the agent's information (`True` or `False`).
+
+
+## 4. TODO
+1. Draw the FD without AV (RL trained agent) and with AV, and get:
+    FD and Pareto optimality plots
+    Goal: get the relationship between Pareto and FD. 
+    Ring lane length: 250m vs 1000m, if the road is too short the veh dont have time for back propagation. 
+
+2. Training with 50 veh one lane of 1000m on super cloud. 
+
+3. Batch running setup on cloud computational resources: Please refer to actual_runs.ipynb, a Jupyter notebook designed for executing batch runs and visualizing the results.
+
+### Batch Running with Slurm:
+Training:
+```
+sbatch train_commands.sh
+```
+
+Evaluation:
+```
+sbatch eval_commands.sh
+```
