@@ -1,8 +1,23 @@
-# Project Environment Setup
+# Project
+
+You may find this project at: [Project Website](https://mit-wu-lab.github.io/automatic_vehicular_control), [IEEE Website](https://ieeexplore.ieee.org/document/9765650), [arXiv](https://arxiv.org/abs/2208.00268).
+
+```
+@article{yan2022unified,
+  title={Unified Automatic Control of Vehicular Systems With Reinforcement Learning},
+  author={Yan, Zhongxia and Kreidieh, Abdul Rahman and Vinitsky, Eugene and Bayen, Alexandre M and Wu, Cathy},
+  journal={IEEE Transactions on Automation Science and Engineering},
+  year={2022},
+  publisher={IEEE}
+}
+```
+
+# Environment Setup
 
 This project uses Python with several dependencies managed by `conda`. Follow the instructions below to set up your development environment.
 
 Updated date: Oct 2nd 2024.
+
 
 ## Requirements
 
@@ -106,18 +121,6 @@ python $F/ring.py . "e=True" "warmup_steps=2000" "skip_stat_steps=5000" \
 "save_agent=True"
 ```
 
-### 3.3 Different veh number
-```
-python $F/ring_different_veh.py $F/pareto/single_ring/different_veh \
-"worker_kwargs=[{'circumference': 250}]" "n_workers=1" "n_rollouts_per_step=45" \
-"warmup_steps=2000" "skip_stat_steps=5000" "horizon=5000" "global_reward=True" "n_steps=400" \
-"alg='TRPO'" "use_critic=False" "gamma=0.9995" "beta=1.0" "scale_ttc=1" "scale_drac=1" \
-"seed_np=1409397498" "seed_torch=23558" "residual_transfer=False" "mrtl=False" \
-"handcraft=False" "step_save=False" "lr=0.0001" "wb=False" "tb=False" 
-
-```
-
-
 #### Explanation of Arguments
 
 - **$F/ring.py**: Path to the running script.
@@ -134,6 +137,18 @@ python $F/ring_different_veh.py $F/pareto/single_ring/different_veh \
 - **result_save**: Path to save the evaluation results as a CSV file.
 - **vehicle_info_save**: Path to save vehicle trajectory data in `.npz` format.
 - **save_agent**: Whether to save the agent's information (`True` or `False`).
+
+
+### 3.3 Different veh number
+```
+python $F/ring_different_veh.py $F/pareto/single_ring/different_veh \
+"worker_kwargs=[{'circumference': 250}]" "n_workers=1" "n_rollouts_per_step=45" \
+"warmup_steps=2000" "skip_stat_steps=5000" "horizon=5000" "global_reward=True" "n_steps=400" \
+"alg='TRPO'" "use_critic=False" "gamma=0.9995" "beta=1.0" "scale_ttc=1" "scale_drac=1" \
+"seed_np=1409397498" "seed_torch=23558" "residual_transfer=False" "mrtl=False" \
+"handcraft=False" "step_save=False" "lr=0.0001" "wb=False" "tb=False" 
+
+```
 
 
 ## 4. TODO

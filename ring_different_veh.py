@@ -409,7 +409,6 @@ if __name__ == '__main__':
             circumference_range=None,  # Range for random circumference
             initial_space='free',      # Initial vehicle spacing: free typically indicate that vehicles are placed with some randomness, meaning the exact initial positions are not fixed but instead have some random variation.
             sigma=0.2,                 # Driver imperfection parameter
-
             circ_feature=False,    # Include circumference in observations
             accel_feature=False,   # Include acceleration in observations
             act_type='accel',      # Type of action (acceleration control)
