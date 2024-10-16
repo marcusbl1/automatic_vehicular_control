@@ -169,9 +169,9 @@ class Main(Config):
 
     def on_train_start(c):
         # Initialize training: environment, algorithm, model, optimizer, and logging
-        c.setdefaults(alg='Algorithm')
-        c._env = c.create_env()
-
+        c.setdefaults(alg='Algorithm') 
+        c._env = c.create_env() # Create NormEnv
+ 
         # Instantiate the algorithm (e.g., PPO, DQN)
         c._alg = (eval(c.alg) if isinstance(c.alg, str) else c.alg)(c)
         c.set_model()
@@ -222,8 +222,8 @@ class Main(Config):
 
     def on_step_start(c, stats={}):
         # Update the learning rate and log stats at the start of a training step
-        lr = c._lr
-        for g in c._opt.param_groups:
+        lr = c._lr # Update Learning Rate
+        for g in c._opt.param_groups: # Log Statistics
             g['lr'] = float(lr)
         c.log_stats(dict(**stats, **c._alg.on_step_start(), lr=lr))
 
@@ -285,10 +285,14 @@ class Main(Config):
             ret = dict(obs=ret)
         rollout = NamedArrays()
         rollout.append(**ret)
-
+        rollout_flow_each_step = []
         done = False
         a_space = c.action_space
         step = 0
+        density = 20/(250*1e-3)
+        vehicle_flow = c._env.mean_speed * 3.6 * density 
+        print(f"Current vehicle flow: {vehicle_flow:.2f} at new episode")
+
         while step < c.horizon + c.skip_stat_steps and not done:
             # Generate an action from the model's policy
             pred = from_torch(c._model(to_torch(rollout.obs[-1]), value=False, policy=True, argmax=False))
@@ -309,6 +313,12 @@ class Main(Config):
             rollout.append(**ret)
             step += 1
         # Collect stats from the environment
+        # rollout_flow_each_step.append(len(c._env.passed_vehicle))
+        # Flow= (Number of vehicles passing a point×3600) / Simulation Time (seconds) 
+        density = 20/(250 * 1e-3)
+        vehicle_flow = c._env.mean_speed * density 
+        print(f"Current vehicle flow: {vehicle_flow:.2f} at step : {step:.2f}")
+
         stats = dict(rollout_time=time() - t_start, **c.get_env_stats())
         return rollout, stats
 
@@ -398,10 +408,10 @@ class Main(Config):
         # Main training loop
         c.on_train_start()
         while c._i < c.n_steps:
-            c.on_step_start()
+            c.on_step_start() # save stat 
             with torch.no_grad():
                 # Collect rollouts without computing gradients
-                rollouts = c.rollouts()
+                rollouts = c.rollouts() # every time collect 1 eps trajectory to update algo
             gd_stats = {}
             if len(rollouts.obs):
                 t_start = time()
@@ -410,7 +420,7 @@ class Main(Config):
                 gd_stats.update(gd_time=time() - t_start)
             c.on_step_end(gd_stats)
             c._i += 1
-        c.on_step_start()  # last step
+        c.on_step_start()  # save stat
         gd_stats = {}
         with torch.no_grad():
             rollouts = c.rollouts()
@@ -449,6 +459,8 @@ class Main(Config):
             c.log('')
         if hasattr(c._env, 'close'):
             c._env.close()
+
+  
 
     def run(c):
         # Determine whether to train or evaluate based on configuration

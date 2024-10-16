@@ -39,7 +39,7 @@ conda env create -f environment.yml
 ### 1.2 Set the environmental variables
 ```
 # Code directory
-export F=automatic_vehicular_control/automatic_vehicular_control
+export F=automatic_vehicular_control
 
 # Results directory extracted from the zip file
 export R=results
@@ -48,10 +48,8 @@ export R=results
 ## 2. Directory Structure
 
 The code directory structure is
-```
+``` 
 automatic_vehicular_control/
-│
-├── automatic_vehicular_control/
 │   ├── __pycache__/                # Compiled Python files
 │   ├── evaluations/                # Evaluation results and metrics
 │   ├── models/                     # Model checkpoints

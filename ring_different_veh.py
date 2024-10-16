@@ -5,8 +5,15 @@
 from exp import *  # Import all from experimental utilities
 from env import *  # Import all from environment utilities
 from u import *    # Import all from utility functions
+import os
 
-# Define the RingEnv class which inherits from the Env class
+os.environ['F'] = 'automatic_vehicular_control'
+
+
+'''
+    RingEnv is a subclass of the Env class and represents the simulation environment 
+    where the vehicles (human-driven or RL-controlled) interact on a ring road.
+'''
 class RingEnv(Env):
     def def_sumo(self):
         c = self.c  # Access configuration object
@@ -15,7 +22,6 @@ class RingEnv(Env):
             E('node', id='bottom', x=0, y=-r),  # Define bottom node at coordinates (0, -r)
             E('node', id='top', x=0, y=r),      # Define top node at coordinates (0, r)
         )
-
         # Function to generate the shape of the edges (circular arcs)
         get_shape = lambda start_angle, end_angle: ' '.join('%.5f,%.5f' % (r * np.cos(i), r * np.sin(i)) for i in np.linspace(start_angle, end_angle, 80))
 
@@ -65,7 +71,7 @@ class RingEnv(Env):
                 )
             }),
             # Define the vehicle type for RL-controlled vehicles
-            E('vType', id='rl', **{
+            E('vType', id='human', **{
                 **IDM, **LC2013, **dict(
                     accel=1,
                     decel=1.5,
@@ -102,7 +108,20 @@ class RingEnv(Env):
         stats['circumference'] = c.circumference  # Add the current circumference to the stats
         stats['beta'] = c.beta                    # Add the beta parameter
         return stats
+    
+    def calculate_flow(self):
+        """
+        Calculate the flow rate by counting vehicles passing a reference point on the ring road.
+        """
+        observation_edge = 'right'  # Example: observe vehicles passing the 'right' edge
+        vehicles_on_edge = [v for v in self.ts.vehicles if v.edge.id == observation_edge]
+        if len(vehicles_on_edge) != 0:     
+            if vehicles_on_edge[0] != self.last_vehicle:
+                self.last_vehicle = vehicles_on_edge[0]
+                self.passed_vehicle.append(self.last_vehicle)
 
+
+                    
     def step(self, action=None):
         c = self.c  # Configuration object
         ts = self.ts  # Time step object
@@ -115,72 +134,7 @@ class RingEnv(Env):
             super().step()
             return c.observation_space.low, 0, False, 0
 
-        rl = nexti(rl_type.vehicles)  # Get the first RL-controlled vehicle
         
-        if action is not None:  # If an action is provided
-            ts.tc.vehicle.setMinGap(rl.id, 0)  # Set minimal gap to prevent collisions
-            # Extract acceleration and lane change components from the action
-            accel, lc = (
-                (action, None) if not c.lc_av else # This part is executed if lane change actions are not available (c.lc_av is False).
-                action if c.lc_act_type == 'continuous' else # This part is executed if lane change actions are continuous.  Here, action is expected to already include both acceleration and lane change information in a form that can be directly used.
-                (action['accel'], action['lc']) # This part is executed when lane change actions exist and are not continuous.
-            )
-            if isinstance(accel, np.ndarray): accel = accel.item()  # Convert np.array to scalar
-            if isinstance(lc, np.ndarray): lc = lc.item()
-            if c.norm_action and isinstance(accel, (float, np.floating)):
-                # Normalize acceleration action
-                accel = (accel - c.low) / (c.high - c.low)
-            if c.norm_action and isinstance(lc, (float, np.floating)):
-                # Normalize lane change action
-                lc = bool(np.round((lc - c.low) / (c.high - c.low)))
-
-            if c.get('handcraft'):  # Apply handcrafted control if specified
-                accel = (0.75 * np.sign(c.handcraft - rl.speed) + 1) / 2
-                lc = True
-                if c.get('handcraft_lc'):
-                    if c.handcraft_lc == 'off':  # No lane change
-                        lc = False
-                    elif c.handcraft_lc == 'stabilize':  # Stabilize the lane
-                        other_lane = rl.lane.left or rl.lane.right
-                        oleader, odist = other_lane.next_vehicle(rl.laneposition, route=rl.route)
-                        ofollower, ofdist = other_lane.prev_vehicle(rl.laneposition, route=rl.route)
-                        if odist + ofdist < 7 and odist > 3:
-                            lc = True
-                        else:
-                            lc = False
-
-            # Apply acceleration or speed control based on the action type
-            if c.act_type == 'accel_discrete':
-                ts.accel(rl, accel / (c.n_actions - 1))  # Discrete acceleration
-            elif c.act_type == 'accel':
-                if c.norm_action:
-                    # Scale the acceleration to match the maximum acceleration or deceleration
-                    accel = (accel * 2 - 1) * (
-                        c.max_accel if accel > 0.5 else c.max_decel
-                    )
-                ts.accel(rl, accel)  # Continuous acceleration
-            else:
-                # Set the vehicle's maximum speed based on the action
-                if c.act_type == 'continuous':
-                    level = accel
-                elif c.act_type == 'discretize':
-                    level = min(
-                        int(accel * c.n_actions),
-                        c.n_actions - 1
-                    ) / (c.n_actions - 1)
-                elif c.act_type == 'discrete':
-                    level = accel / (c.n_actions - 1)
-                ts.set_max_speed(rl, max_speed * level)
-                
-            if c.n_lanes > 1:  # Handle lane changes if there are multiple lanes
-                if c.symmetric_action if c.symmetric_action is not None else c.symmetric:
-                    if lc:
-                        # Perform a symmetric lane change (left or right based on lane index)
-                        ts.lane_change(rl, -1 if rl.lane_index % 2 else +1)
-                else:
-                    # Change to a specific lane
-                    ts.lane_change_to(rl, lc)
-
         super().step()  # Advance the simulation by one step
 
         if len(ts.new_arrived | ts.new_collided):  # Check for collisions
@@ -267,6 +221,9 @@ class RingEnv(Env):
 
         speed_reward = np.clip(reward / max_speed, -1, 1)  # Normalize speed reward to range [-1, 1]
 
+        # Calculate flow at the end of each step
+        self.mean_speed = np.mean([v.speed for v in self.ts.vehicles])
+        
         # Calculate safety surrogate measures
         raw_ttc, raw_drac = self.calc_ttc(), self.calc_drac()
         ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # Log-transform TTC; default value if NaN
@@ -340,7 +297,14 @@ class RingEnv(Env):
         fleet_pet = np.nanmean(np.array(pets))  # Average PET, ignoring NaN values
         return fleet_pet
 
-# Define the Ring class which inherits from the Main class
+
+'''
+    Ring is a subclass of Main, and it represents the configuration and control structure for running the simulation. 
+    It defines how the environment is created and configured, 
+    including parameters such as number of vehicles, observation space, action space, and various simulation settings.
+    This class is primarily responsible for setting up and managing the parameters and settings of the environment (RingEnv) before running the simulation. 
+    It configures the simulation based on arguments passed at runtime and ensures that the environment is properly set up for training or testing.
+'''
 class Ring(Main):
     # Method to create and return the environment
     def create_env(c):
@@ -391,7 +355,7 @@ class Ring(Main):
 
 if __name__ == '__main__':
     # Run the test with different numbers of vehicles
-    for n_veh in range(40, 100, 10):
+    for n_veh in range(20, 40, 10):
         print(f"Running simulation with {n_veh} vehicles")
         # Set up the configuration for a one-lane ring road with different vehicle counts
         c = Ring.from_args(globals(), locals()).setdefaults(
