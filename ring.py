@@ -486,26 +486,6 @@ if __name__ == '__main__':
                 n_veh=n_veh,  # Number of vehicles
                 _n_obs=3 + c.circ_feature + c.accel_feature  # Observation size
             )
-        elif c.n_lanes == 2:
-            c.setdefaults(
-                n_veh= int(n_veh*2),
-                lc_mode=LC_MODE.no_lat_collide, # No lateral collision mode
-                symmetric=False,
-                symmetric_action=None,
-                lc_av=2
-            )
-            c._n_obs = (1 + 2 * 2 * 2) if c.symmetric else (1 + 2 * 5)
-        elif c.n_lanes == 3:
-            c.setdefaults(
-                n_veh=66,
-                lc_mode=LC_MODE.no_lat_collide, # No lateral collision mode
-                symmetric=False,
-                symmetric_action=None,
-                lc_av=3,
-                _n_obs=1 + 3 * (1 + 2 * 2)
-            )
-        if c.mrtl:
-            c._n_obs += 1  # Increase observation size for mrtl
 
         c.step_save = c.step_save or min(5, c.n_steps // 10)  # Set step save interval
         c.redef_sumo = bool(c.circumference_range)  # Redefine sumo if random circumference range is given
@@ -514,7 +494,6 @@ if __name__ == '__main__':
         c.run()  # Assuming the RingEnv class has a run method
 
         print(f"Simulation with {n_veh} vehicles completed")
-
 
 
 
