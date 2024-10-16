@@ -71,19 +71,19 @@ class RingEnv(Env):
                 )
             }),
             # Define the vehicle type for RL-controlled vehicles
-            # E('vType', id='rl', **{
-            #     **IDM, **LC2013, **dict(
-            #         accel=1,
-            #         decel=1.5,
-            #         minGap=2,
-            #         sigma=0  # No randomness in RL vehicles
-            #     )
-            # }),
+            E('vType', id='rl', **{
+                **IDM, **LC2013, **dict(
+                    accel=1,
+                    decel=1.5,
+                    minGap=2,
+                    sigma=0  # No randomness in RL vehicles
+                )
+            }),
             # Build a closed route on the ring road with the specified number of vehicles
             *build_closed_route(
                 edges,
-                n_veh = c.n_veh,
-                av = c.av,
+                c.n_veh,
+                c.av,
                 space=c.initial_space
             )
         )
@@ -108,13 +108,218 @@ class RingEnv(Env):
         stats['circumference'] = c.circumference  # Add the current circumference to the stats
         stats['beta'] = c.beta                    # Add the beta parameter
         return stats
-        
+    
+    def calculate_flow(self):
+        """
+        Calculate the flow rate by counting vehicles passing a reference point on the ring road.
+        """
+        observation_edge = 'right'  # Example: observe vehicles passing the 'right' edge
+        vehicles_on_edge = [v for v in self.ts.vehicles if v.edge.id == observation_edge]
+        if len(vehicles_on_edge) != 0:     
+            if vehicles_on_edge[0] != self.last_vehicle:
+                self.last_vehicle = vehicles_on_edge[0]
+                self.passed_vehicle.append(self.last_vehicle)
+
+
+                    
     def step(self, action=None):
         c = self.c  # Configuration object
-        ts = self.ts  # Traffuc state object
-        c, ts = self.c, self.ts
-        super().step_2()
-        return c.observation_space.low, 0, False, None
+        ts = self.ts  # Time step object
+        max_speed = c.max_speed  # Max vehicle speed
+        circ_max = max_dist = c.circumference_max  # Max circumference for normalization
+        circ_min = c.circumference_min  # Min circumference for normalization
+        rl_type = ts.types.rl  # RL-controlled vehicle type
+
+        if not rl_type.vehicles:  # If no RL vehicles are present, proceed without action
+            super().step()
+            return c.observation_space.low, 0, False, 0
+
+        rl = nexti(rl_type.vehicles)  # Get the first RL-controlled vehicle
+        
+        if action is not None:  # If an action is provided
+            ts.tc.vehicle.setMinGap(rl.id, 0)  # Set minimal gap to prevent collisions
+            # Extract acceleration and lane change components from the action
+            accel, lc = (
+                (action, None) if not c.lc_av else # This part is executed if lane change actions are not available (c.lc_av is False).
+                action if c.lc_act_type == 'continuous' else # This part is executed if lane change actions are continuous.  Here, action is expected to already include both acceleration and lane change information in a form that can be directly used.
+                (action['accel'], action['lc']) # This part is executed when lane change actions exist and are not continuous.
+            )
+            if isinstance(accel, np.ndarray): accel = accel.item()  # Convert np.array to scalar
+            if isinstance(lc, np.ndarray): lc = lc.item()
+            if c.norm_action and isinstance(accel, (float, np.floating)):
+                # Normalize acceleration action
+                accel = (accel - c.low) / (c.high - c.low)
+            if c.norm_action and isinstance(lc, (float, np.floating)):
+                # Normalize lane change action
+                lc = bool(np.round((lc - c.low) / (c.high - c.low)))
+
+            if c.get('handcraft'):  # Apply handcrafted control if specified
+                accel = (0.75 * np.sign(c.handcraft - rl.speed) + 1) / 2
+                lc = True
+                if c.get('handcraft_lc'):
+                    if c.handcraft_lc == 'off':  # No lane change
+                        lc = False
+                    elif c.handcraft_lc == 'stabilize':  # Stabilize the lane
+                        other_lane = rl.lane.left or rl.lane.right
+                        oleader, odist = other_lane.next_vehicle(rl.laneposition, route=rl.route)
+                        ofollower, ofdist = other_lane.prev_vehicle(rl.laneposition, route=rl.route)
+                        if odist + ofdist < 7 and odist > 3:
+                            lc = True
+                        else:
+                            lc = False
+
+            # Apply acceleration or speed control based on the action type
+            if c.act_type == 'accel_discrete':
+                ts.accel(rl, accel / (c.n_actions - 1))  # Discrete acceleration
+            elif c.act_type == 'accel':
+                if c.norm_action:
+                    # Scale the acceleration to match the maximum acceleration or deceleration
+                    accel = (accel * 2 - 1) * (
+                        c.max_accel if accel > 0.5 else c.max_decel
+                    )
+                ts.accel(rl, accel)  # Continuous acceleration
+            else:
+                # Set the vehicle's maximum speed based on the action
+                if c.act_type == 'continuous':
+                    level = accel
+                elif c.act_type == 'discretize':
+                    level = min(
+                        int(accel * c.n_actions),
+                        c.n_actions - 1
+                    ) / (c.n_actions - 1)
+                elif c.act_type == 'discrete':
+                    level = accel / (c.n_actions - 1)
+                ts.set_max_speed(rl, max_speed * level)
+                
+            if c.n_lanes > 1:  # Handle lane changes if there are multiple lanes
+                if c.symmetric_action if c.symmetric_action is not None else c.symmetric:
+                    if lc:
+                        # Perform a symmetric lane change (left or right based on lane index)
+                        ts.lane_change(rl, -1 if rl.lane_index % 2 else +1)
+                else:
+                    # Change to a specific lane
+                    ts.lane_change_to(rl, lc)
+
+        
+        super().step()  # Advance the simulation by one step
+
+        if len(ts.new_arrived | ts.new_collided):  # Check for collisions
+            print('Detected collision')
+            return c.observation_space.low, -c.collision_penalty, True, None
+        elif len(ts.vehicles) < c.n_veh:  # Check for missing vehicles
+            print('Bad initialization occurred, fix the initialization function')
+            return c.observation_space.low, 0, True, None
+
+        leader, dist = rl.leader()  # Get the leader vehicle and headway distance
+        if c.n_lanes == 1:
+            # Single-lane observation space representation
+            obs = [
+                rl.speed / max_speed,           # Normalized RL vehicle speed
+                leader.speed / max_speed,       # Normalized leader vehicle speed
+                dist / max_dist                 # Normalized headway distance
+            ]
+            if c.circ_feature:
+                # Add normalized circumference feature
+                obs.append((c.circumference - circ_min) / (circ_max - circ_min))
+            if c.accel_feature:
+                # Add leader acceleration feature
+                obs.append(0 if leader.prev_speed is None else (leader.speed - leader.speed) / max_speed)
+        elif c.n_lanes == 2:
+            # Two-lane observation space representation
+            lane = rl.lane
+            follower, fdist = rl.follower()  # Get follower vehicle and distance
+            if c.symmetric:
+                # Symmetric lane observations
+                other_lane = rl.lane.left or rl.lane.right
+                oleader, odist = other_lane.next_vehicle(rl.laneposition, route=rl.route)
+                ofollower, ofdist = other_lane.prev_vehicle(rl.laneposition, route=rl.route)
+                obs = np.concatenate([
+                    # Normalized speeds of vehicles in the current and other lane
+                    np.array([rl.speed, leader.speed, oleader.speed, follower.speed, ofollower.speed]) / max_speed,
+                    # Normalized distances to the leader and follower vehicles
+                    np.array([dist, odist, fdist, ofdist]) / max_dist
+                ])
+            else:
+                # Asymmetric lane observations
+                obs = [rl.speed]
+                for lane in rl.edge.lanes:
+                    is_rl_lane = lane == rl.lane
+                    if is_rl_lane:
+                        # Observations for the lane in which RL vehicle is currently present
+                        obs.extend([is_rl_lane, dist, leader.speed, fdist, follower.speed])
+                    else:
+                        # Observations for the other lane
+                        oleader, odist = lane.next_vehicle(rl.laneposition, route=rl.route)
+                        ofollower, ofdist = lane.prev_vehicle(rl.laneposition, route=rl.route)
+                        obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
+                # Normalize the observations
+                obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 2)]
+        else:
+            # Multi-lane observation space representation (for more than two lanes)
+            obs = [rl.speed]
+            follower, fdist = rl.follower()
+            for lane in rl.edge.lanes:
+                is_rl_lane = lane == rl.lane
+                if is_rl_lane:
+                    # Observations for the current lane
+                    obs.extend([is_rl_lane, dist, leader.speed, fdist, follower.speed])
+                else:
+                    # Observations for other lanes
+                    oleader, odist = lane.next_vehicle(rl.laneposition, route=rl.route)
+                    ofollower, ofdist = lane.prev_vehicle(rl.laneposition, route=rl.route)
+                    obs.extend([is_rl_lane, odist, oleader.speed, ofdist, ofollower.speed])
+            # Normalize the observations
+            obs = np.array(obs) / [max_speed, *([1, max_dist, max_speed, max_dist, max_speed] * 3)]
+
+        if c.mrtl:
+            # If mrtl is enabled, add beta to observations
+            obs = np.concatenate([obs, np.array([c.beta])])
+        # Clip and scale observations to the specified range
+        obs = np.clip(obs, 0, 1) * (1 - c.low) + c.low
+
+        # Compute reward based on average speed of all vehicles or only RL-controlled vehicles
+        reward = np.mean([v.speed for v in (ts.vehicles if c.global_reward else rl_type.vehicles)])
+        if c.accel_penalty and hasattr(self, 'last_speed'):
+            # Apply penalty for acceleration changes
+            reward -= c.accel_penalty * np.abs(rl.speed - self.last_speed) / c.sim_step
+
+        self.last_speed = rl.speed  # Update last speed for next step
+
+        speed_reward = np.clip(reward / max_speed, -1, 1)  # Normalize speed reward to range [-1, 1]
+
+        # Calculate flow at the end of each step
+        self.mean_speed = np.mean([v.speed for v in self.ts.vehicles])
+        
+        # Calculate safety surrogate measures
+        raw_ttc, raw_drac = self.calc_ttc(), self.calc_drac()
+        ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # Log-transform TTC; default value if NaN
+        ttc = np.clip(ttc / 7, -1, 1)  # Normalize TTC to range [-1, 1]
+        drac = np.log10(raw_drac) if not np.isnan(raw_drac) else 1e-4  # Log-transform DRAC; default value if NaN
+        drac = np.clip(drac / 10, -1, 1)  # Normalize DRAC to range [-1, 1]
+
+        raw_pet = self.calc_pet()
+        pet = np.log10(raw_pet) if not np.isnan(raw_pet) else 6  # Log-transform PET; default value if NaN
+        pet = np.clip(pet, -1, 1)  # Normalize PET to range [-1, 1]
+
+        # Combine safety measures into a single value for the reward
+        ssm = (c.scale_ttc * ttc - c.scale_drac * drac) / 2
+        # Compute the final reward by combining speed and safety rewards, weighted by beta
+        reward = (1 - c.beta) * speed_reward + c.beta * ssm
+
+        # Return observations, reward, and other rollout information
+        returned = dict(
+            obs=obs.astype(np.float32),  # Observations
+            reward=reward,               # Final reward value
+            speed_reward=speed_reward,   # Component of reward due to speed
+            ttc=ttc,                     # Time to collision value
+            drac=drac,                   # Deceleration rate to avoid collision
+            pet=pet,                     # Post-encroachment time
+            ssm=ssm,                     # Combined safety surrogate measure
+            raw_ttc=raw_ttc,             # Raw TTC value
+            raw_drac=raw_drac,           # Raw DRAC value
+            raw_pet=raw_pet              # Raw PET value
+        )
+        return returned
 
     # Calculate the average Time to Collision (TTC) for all vehicles
     def calc_ttc(self):
@@ -224,7 +429,7 @@ if __name__ == '__main__':
             horizon=3000,          # Total number of simulation steps
             warmup_steps=1000,     # Number of steps before RL control starts
             sim_step=0.1,          # Simulation time step
-            av=0,                  # Number of autonomous vehicles
+            av=1,                  # Number of autonomous vehicles
             max_speed=10,          # Maximum vehicle speed
             max_accel=0.5,         # Maximum acceleration
             max_decel=0.5,         # Maximum deceleration
@@ -286,11 +491,9 @@ if __name__ == '__main__':
         c.redef_sumo = bool(c.circumference_range)  # Redefine sumo if random circumference range is given
 
         # Run the environment with the set configuration
-        c.run_2()  # Assuming the RingEnv class has a run method
+        c.run()  # Assuming the RingEnv class has a run method
 
         print(f"Simulation with {n_veh} vehicles completed")
-
-
 
 
 

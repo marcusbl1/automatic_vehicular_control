@@ -852,12 +852,15 @@ class TrafficState:
         subscribes.sim = SubscribeDef(tc.simulation, [
             V.departed_vehicles_ids, V.arrived_vehicles_ids,
             V.colliding_vehicles_ids, V.loaded_vehicles_ids]).subscribe()
+        
         subscribes.tl = SubscribeDef(tc.trafficlight, [
             TL.red_yellow_green_state])
+        
         subscribes.veh = SubscribeDef(tc.vehicle, [
             V.road_id, V.lane_index, V.laneposition,
             V.speed, V.position, V.angle,
             V.fuelconsumption, V.noxemission])
+        
         for tl_id in self.traffic_lights.keys():
             subscribes.tl.subscribe(tl_id)
 
@@ -1109,6 +1112,27 @@ class Env:
         if self._vehicle_info is not None:
             self.extend_vehicle_info()
         self._step += 1
+        self.mean_speed = np.mean([v.speed for v in self.ts.vehicles])
+        return c.observation_space.low, 0, False, None
+    
+    
+    def step_2(self, *args):
+        """
+            Override this with additional code which applies acceleration and measures observation and reward
+        """
+        c, ts = self.c, self.ts
+        if c.get('custom_idm'):
+            idm = c.custom_idm
+            for veh in ts.types.human.vehicles:
+                leader, headway = veh.leader()
+                v = veh.speed
+                s_star = 0 if leader is None else idm.minGap + max(0, v * idm.tau + v * (v - leader.speed) / (2 * np.sqrt(idm.accel * idm.decel)))
+                a = idm.accel * (1 - (v / idm.maxSpeed) ** idm.delta - (s_star / (headway - leader.length)) ** 2)
+                noise = np.random.normal(0, idm.sigma)
+                ts.accel(veh, a + noise)
+        self.ts.step()
+        self._step += 1
+        self.mean_speed = np.mean([v.speed for v in self.ts.vehicles])
         return c.observation_space.low, 0, False, None
 
     def init_vehicles(self):

@@ -3,6 +3,8 @@
 
 from u import Config
 from ut import *
+import numpy as np
+
 
 class Main(Config):
     # Set the base path for flow results, using the environment variable 'F'
@@ -285,11 +287,10 @@ class Main(Config):
             ret = dict(obs=ret)
         rollout = NamedArrays()
         rollout.append(**ret)
-        rollout_flow_each_step = []
         done = False
         a_space = c.action_space
         step = 0
-        density = 20/(250*1e-3)
+        density = c.var().n_veh/(c.var().circumference*1e-3)
         vehicle_flow = c._env.mean_speed * 3.6 * density 
         print(f"Current vehicle flow: {vehicle_flow:.2f} at new episode")
 
@@ -315,8 +316,7 @@ class Main(Config):
         # Collect stats from the environment
         # rollout_flow_each_step.append(len(c._env.passed_vehicle))
         # Flow= (Number of vehicles passing a point×3600) / Simulation Time (seconds) 
-        density = 20/(250 * 1e-3)
-        vehicle_flow = c._env.mean_speed * density 
+        vehicle_flow = c._env.mean_speed * density  * 3.6
         print(f"Current vehicle flow: {vehicle_flow:.2f} at step : {step:.2f}")
 
         stats = dict(rollout_time=time() - t_start, **c.get_env_stats())
@@ -406,9 +406,8 @@ class Main(Config):
 
     def train(c):
         # Main training loop
-        c.on_train_start()
-        while c._i < c.n_steps:
-            c.on_step_start() # save stat 
+        c.on_train_start() # Ring Env
+        while c._i < c.n_steps: # episode loop
             with torch.no_grad():
                 # Collect rollouts without computing gradients
                 rollouts = c.rollouts() # every time collect 1 eps trajectory to update algo
@@ -422,7 +421,7 @@ class Main(Config):
             c._i += 1
         c.on_step_start()  # save stat
         gd_stats = {}
-        with torch.no_grad():
+        with torch.no_grad(): # collect the rollout after training finishing
             rollouts = c.rollouts()
             c.on_step_end(gd_stats)
         c.on_train_end()
@@ -497,3 +496,37 @@ class Main(Config):
             assert c.n_workers * c.n_rollouts_per_worker == c.n_rollouts_per_step
             c.train()
         c.log('job done!')
+
+    def run_2(c):
+        # Determine whether to train or evaluate based on configuration
+        c.log(format_yaml({k: v for k, v in c.items() if not k.startswith('_')}))
+        c.setdefaults(n_workers=1, n_rollouts_per_worker=c.n_rollouts_per_step, use_ray=False)
+        c.on_train_start()
+        c._env = c.create_env() # Create NormEnv
+        c.set_model()
+        done = False
+        flow_eps = []
+        density = c.var().n_veh/(c.var().circumference*1e-3)
+
+        while c._i < c.n_steps: #episode loop 
+            ret = c._env.reset()
+            step = 0
+            vehicle_flow = c._env.mean_speed * 3.6 * density 
+            flow_ep = []
+            flow_ep.append(vehicle_flow)
+            print(f"Current vehicle flow: {vehicle_flow:.2f} at new episode")
+            while step < c.horizon + c.skip_stat_steps and not done: # step loop
+                # Take a step in the environment
+                ret = c._env.step()
+                if isinstance(ret, tuple):
+                    obs, reward, done, info = ret
+                    ret = dict(obs=obs, reward=reward, done=done, info=info)
+                done = ret.setdefault('done', False)
+                vehicle_flow = c._env.mean_speed * density  * 3.6
+                flow_ep.append(vehicle_flow)
+                print(f"Current vehicle flow: {vehicle_flow:.2f} at step : {step:.2f}")
+                step += 1
+            flow_eps.append(np.array(flow_ep))
+            c._i += 1
+        
+        np.save((c.res+"flow_eps.np"), np.array(flow_eps))
