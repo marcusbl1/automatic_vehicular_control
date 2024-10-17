@@ -514,7 +514,7 @@ class Main(Config):
             vehicle_flow = c._env.mean_speed * 3.6 * density 
             flow_ep = []
             flow_ep.append(vehicle_flow)
-            print(f"Current vehicle flow: {vehicle_flow:.2f} at new episode")
+            # print(f"Current vehicle flow: {vehicle_flow:.2f} at new episode")
             while step < c.horizon + c.skip_stat_steps and not done: # step loop
                 # Take a step in the environment
                 ret = c._env.step()
@@ -524,9 +524,9 @@ class Main(Config):
                 done = ret.setdefault('done', False)
                 vehicle_flow = c._env.mean_speed * density  * 3.6
                 flow_ep.append(vehicle_flow)
-                print(f"Current vehicle flow: {vehicle_flow:.2f} at step : {step:.2f}")
+                # print(f"Current vehicle flow: {vehicle_flow:.2f} at step : {step:.2f}")
                 step += 1
             flow_eps.append(np.array(flow_ep))
             c._i += 1
         
-        np.save((c.res+"flow_eps.np"), np.array(flow_eps))
+        np.save((c.res+"flow_eps"), np.array(flow_eps))

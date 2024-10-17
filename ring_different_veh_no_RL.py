@@ -216,7 +216,7 @@ class Ring(Main):
 
 if __name__ == '__main__':
     # Run the test with different numbers of vehicles
-    for n_veh in range(20, 40, 10):
+    for n_veh in range(20, 120, 10):
         print(f"Running simulation with {n_veh} vehicles")
         # Set up the configuration for a one-lane ring road with different vehicle counts
         c = Ring.from_args(globals(), locals()).setdefaults(

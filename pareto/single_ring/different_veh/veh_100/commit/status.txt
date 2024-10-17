@@ -1,0 +1,37 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   README.md
+	modified:   exp.py
+	modified:   logs/log_1.txt
+	modified:   pareto/single_ring/different_veh/veh_20/commit/diff.txt
+	modified:   pareto/single_ring/different_veh/veh_20/commit/hash.txt
+	modified:   pareto/single_ring/different_veh/veh_20/commit/status.txt
+	modified:   pareto/single_ring/different_veh/veh_30/commit/diff.txt
+	modified:   pareto/single_ring/different_veh/veh_30/commit/hash.txt
+	modified:   pareto/single_ring/different_veh/veh_30/commit/status.txt
+	modified:   pareto/single_ring/different_veh/veh_40/commit/diff.txt
+	modified:   pareto/single_ring/different_veh/veh_40/commit/hash.txt
+	modified:   pareto/single_ring/different_veh/veh_40/commit/status.txt
+	modified:   ring_different_veh_no_RL.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	logs/log_2.txt
+	logs/log_2python
+	pareto/single_ring/different_veh/veh_20/flow_eps.np.npy
+	pareto/single_ring/different_veh/veh_20/flow_eps.npy
+	pareto/single_ring/different_veh/veh_30/flow_eps.np.npy
+	pareto/single_ring/different_veh/veh_30/flow_eps.npy
+	pareto/single_ring/different_veh/veh_40/flow_eps.npy
+	pareto/single_ring/different_veh/veh_50/
+	pareto/single_ring/different_veh/veh_60/
+	pareto/single_ring/different_veh/veh_70/
+	pareto/single_ring/different_veh/veh_80/
+	pareto/single_ring/different_veh/veh_90/
+	statistics/
+
+no changes added to commit (use "git add" and/or "git commit -a")

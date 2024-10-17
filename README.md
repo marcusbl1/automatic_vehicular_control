@@ -137,14 +137,14 @@ python $F/ring.py . "e=True" "warmup_steps=2000" "skip_stat_steps=5000" \
 - **save_agent**: Whether to save the agent's information (`True` or `False`).
 
 
-### 3.3 Different veh number
+### 3.3 Different veh number without RL 
 ```
-python $F/ring_different_veh_no_RL.py $F/pareto/single_ring/different_veh \
+python $F/ring_different_veh_no_RL.py  $F/pareto/single_ring/different_veh \
 "worker_kwargs=[{'circumference': 250}]" "n_workers=1" "n_rollouts_per_step=45" \
-"warmup_steps=0" "skip_stat_steps=0" "horizon=5000" "global_reward=True" "n_steps=40" \
+"warmup_steps=0" "skip_stat_steps=0" "horizon=3000" "global_reward=True" "n_steps=40" \
 "alg='TRPO'" "use_critic=False" "gamma=0.9995" "beta=1.0" "scale_ttc=1" "scale_drac=1" \
 "seed_np=1409397498" "seed_torch=23558" "residual_transfer=False" "mrtl=False" \
-"handcraft=False" "step_save=False" "lr=0.0001" "wb=False" "tb=False"  2>&1 | tee $F/logs/log_1.txt
+"handcraft=False" "step_save=False" "lr=0.0001" "wb=False" "tb=False"  2>&1 | tee $F/logs/log_2.txt
 
 ```
 

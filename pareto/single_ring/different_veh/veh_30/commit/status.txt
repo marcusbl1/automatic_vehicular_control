@@ -2,21 +2,26 @@ On branch main
 Your branch is up to date with 'origin/main'.
 
 Changes not staged for commit:
-  (use "git add/rm <file>..." to update what will be committed)
+  (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	modified:   env.py
+	modified:   README.md
 	modified:   exp.py
-	deleted:    highway_bottleneck.py
-	deleted:    highway_ramp.py
-	deleted:    intersection.py
+	modified:   logs/log_1.txt
 	modified:   pareto/single_ring/different_veh/veh_20/commit/diff.txt
 	modified:   pareto/single_ring/different_veh/veh_20/commit/hash.txt
 	modified:   pareto/single_ring/different_veh/veh_20/commit/status.txt
-	modified:   ring_different_veh.py
+	modified:   pareto/single_ring/different_veh/veh_30/commit/diff.txt
+	modified:   pareto/single_ring/different_veh/veh_30/commit/hash.txt
+	modified:   pareto/single_ring/different_veh/veh_30/commit/status.txt
+	modified:   ring_different_veh_no_RL.py
 
 Untracked files:
   (use "git add <file>..." to include in what will be committed)
-	pareto/single_ring/different_veh/veh_30/
-	ring_2.py
+	logs/log_2.txt
+	logs/log_2python
+	pareto/single_ring/different_veh/veh_20/flow_eps.np.npy
+	pareto/single_ring/different_veh/veh_20/flow_eps.npy
+	pareto/single_ring/different_veh/veh_30/flow_eps.np.npy
+	statistics/
 
 no changes added to commit (use "git add" and/or "git commit -a")
