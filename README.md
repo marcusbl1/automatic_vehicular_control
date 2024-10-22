@@ -161,7 +161,6 @@ sbatch eval_commands.sh
 
 ## 4. TODO
 
-2. Training with 50 veh one lane of 1000m on super cloud. 
-
-3. Batch running setup on cloud computational resources: Please refer to actual_runs.ipynb, a Jupyter notebook designed for executing batch runs and visualizing the results.
+2. Test batch running and check if the plot is right: Training with 50 veh one lane of 1000m on Super Cloud. 
+3. Try different veh number under the scenarios of w or w/o RL and compare if the fundamental diagram get improved Super Cloud.
 
