@@ -70,7 +70,6 @@ automatic_vehicular_control/
 │   ├── ring.py                     # Main script for running the ring road environment
 │   ├── ut.py                       # Definie algo and NN related func
 │   ├── u.py                        # Definie help func
-
 ```
 
 
@@ -161,10 +160,6 @@ sbatch eval_commands.sh
 ```
 
 ## 4. TODO
-1. Draw the FD without AV (RL trained agent) and with AV, and get:
-    FD and Pareto optimality plots
-    Goal: get the relationship between Pareto and FD. 
-    Ring lane length: 250m vs 1000m, if the road is too short the veh dont have time for back propagation. 
 
 2. Training with 50 veh one lane of 1000m on super cloud. 
 
