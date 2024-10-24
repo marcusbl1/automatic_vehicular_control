@@ -2,9 +2,10 @@
 # from automatic_vehicular_control.env import *  # Import all from environment utilities
 # from automatic_vehicular_control.u import *    # Import all from utility functions
 
-from exp import *  # Import all from experimental utilities
 from env import *  # Import all from environment utilities
 from u import *    # Import all from utility functions
+from exp import *  # Import all from experimental utilities
+
 import os
 
 os.environ['F'] = 'automatic_vehicular_control'
@@ -285,11 +286,7 @@ class RingEnv(Env):
 
         self.last_speed = rl.speed  # Update last speed for next step
 
-        speed_reward = np.clip(reward / max_speed, -1, 1)  # Normalize speed reward to range [-1, 1]
-
-        # Calculate flow at the end of each step
-        self.mean_speed = np.mean([v.speed for v in self.ts.vehicles])
-        
+        speed_reward = np.clip(reward / max_speed, -1, 1)  # Normalize speed reward to range [-1, 1]        
         # Calculate safety surrogate measures
         raw_ttc, raw_drac = self.calc_ttc(), self.calc_drac()
         ttc = np.log10(raw_ttc) if not np.isnan(raw_ttc) else 7  # Log-transform TTC; default value if NaN
@@ -421,24 +418,25 @@ class Ring(Main):
 
 if __name__ == '__main__':
     # Run the test with different numbers of vehicles
-    for n_veh in range(20, 40, 10):
+    for n_veh in range(30, 60, 10):
         print(f"Running simulation with {n_veh} vehicles")
         # Set up the configuration for a one-lane ring road with different vehicle counts
         c = Ring.from_args(globals(), locals()).setdefaults(
             n_lanes=1,             # Number of lanes in the ring road
-            horizon=3000,          # Total number of simulation steps
-            warmup_steps=1000,     # Number of steps before RL control starts
+            warmup_steps=0,     # Number of steps before RL control starts
+            skip_stat_steps=0,
+            horizon=1000,          # Total number of simulation steps
             sim_step=0.1,          # Simulation time step
-            av=1,                  # Number of autonomous vehicles
+            av=0,                  # Number of autonomous vehicles
             max_speed=10,          # Maximum vehicle speed
             max_accel=0.5,         # Maximum acceleration
             max_decel=0.5,         # Maximum deceleration
-            circumference=1000,     # Circumference of the ring road
+            circumference=200,     # Circumference of the ring road
             circumference_max=300, # Maximum circumference
             circumference_min=200, # Minimum circumference
             circumference_range=None,  # Range for random circumference
             initial_space='free',      # Initial vehicle spacing: free typically indicate that vehicles are placed with some randomness, meaning the exact initial positions are not fixed but instead have some random variation.
-            sigma=0.2,                 # Driver imperfection parameter
+            sigma=0.2,                 # Driver imperfection 
             circ_feature=False,    # Include circumference in observations
             accel_feature=False,   # Include acceleration in observations
             act_type='accel',      # Type of action (acceleration control)
@@ -446,17 +444,20 @@ if __name__ == '__main__':
             low=-1,                # Minimum action value
             high=1,                # Maximum action value
             norm_action=True,      # Normalize action values
-            global_reward=False,   # Use global reward (all vehicles)
+            global_reward=True,   # Use global reward (all vehicles)
             accel_penalty=0,       # Penalty for acceleration changes
             collision_penalty=100, # Penalty for collisions
-
-            n_steps=100,           # Number of training steps
+            n_steps=50,           # Number of training steps
             gamma=0.999,           # Discount factor
-            alg=PG,                # Learning algorithm (Policy Gradient)
+            alg='TRPO',            # Learning algorithm (Policy Gradient), if algo is False then no RL
+            use_critic='False',     
+            
             norm_reward=True,      # Normalize rewards
             center_reward=True,    # Center rewards
             adv_norm=False,        # Normalize advantages
             step_save=None,        # Steps between saving models
+            n_rollouts_per_step = 1, # rollouts to collect 
+            n_workers=1,
 
             render=False,          # Render the simulation
 
@@ -464,10 +465,14 @@ if __name__ == '__main__':
             scale_ttc=1,           # Scaling factor for TTC
             scale_pet=1,           # Scaling factor for PET
             scale_drac=1,          # Scaling factor for DRAC
-            seed_np=False,         # Seed for NumPy
-            seed_torch=False,      # Seed for PyTorch
+            seed_np=1409397498,    # Seed for NumPy
+            seed_torch=23558,      # Seed for PyTorch
             residual_transfer=False, # Modify which network (nominal/residual)
             mrtl=False,            # Include beta in observations
+            lr=0.0001,
+            wb=False,
+            tb=False
+            
         )
         c.res = c.res +"/veh_"+str(n_veh)+"/"
         os.makedirs(c.res, exist_ok=True)
@@ -490,9 +495,11 @@ if __name__ == '__main__':
         c.step_save = c.step_save or min(5, c.n_steps // 10)  # Set step save interval
         c.redef_sumo = bool(c.circumference_range)  # Redefine sumo if random circumference range is given
 
-        # Run the environment with the set configuration
-        c.run()  # Assuming the RingEnv class has a run method
-
+        if c.av:
+            # Run the environment with RL 
+            c.run()  # Assuming the RingEnv class has a run method
+        else:
+            c.run_2()
         print(f"Simulation with {n_veh} vehicles completed")
 
 

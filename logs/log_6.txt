@@ -1,0 +1,630 @@
+Running simulation with 10 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 0
+beta: 1.0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.9995
+global_reward: true
+handcraft: false
+high: 1
+horizon: 3000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 100
+n_veh: 10
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_10/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: false
+tmp: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200
+
+netconvert -o automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_10/sumo/net.xml -n automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_10/sumo/nod.xml -e automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_10/sumo/edg.xml -x automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_10/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_10/sumo/net.xml --additional-files automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_10/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_10/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+Simulation with 10 vehicles completed
+Running simulation with 20 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 0
+beta: 1.0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.9995
+global_reward: true
+handcraft: false
+high: 1
+horizon: 3000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 100
+n_veh: 20
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_20/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: false
+tmp: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200
+
+netconvert -o automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_20/sumo/net.xml -n automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_20/sumo/nod.xml -e automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_20/sumo/edg.xml -x automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_20/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_20/sumo/net.xml --additional-files automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_20/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_20/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+Simulation with 20 vehicles completed
+Running simulation with 30 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 0
+beta: 1.0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.9995
+global_reward: true
+handcraft: false
+high: 1
+horizon: 3000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 100
+n_veh: 30
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_30/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: false
+tmp: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200
+
+netconvert -o automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_30/sumo/net.xml -n automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_30/sumo/nod.xml -e automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_30/sumo/edg.xml -x automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_30/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_30/sumo/net.xml --additional-files automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_30/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_30/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+Simulation with 30 vehicles completed
+Running simulation with 40 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 0
+beta: 1.0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.9995
+global_reward: true
+handcraft: false
+high: 1
+horizon: 3000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 100
+n_veh: 40
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_40/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: false
+tmp: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200
+
+netconvert -o automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_40/sumo/net.xml -n automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_40/sumo/nod.xml -e automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_40/sumo/edg.xml -x automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_40/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_40/sumo/net.xml --additional-files automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_40/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_40/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+Simulation with 40 vehicles completed
+Running simulation with 50 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 0
+beta: 1.0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.9995
+global_reward: true
+handcraft: false
+high: 1
+horizon: 3000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 100
+n_veh: 50
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_50/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: false
+tmp: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200
+
+netconvert -o automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_50/sumo/net.xml -n automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_50/sumo/nod.xml -e automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_50/sumo/edg.xml -x automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_50/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_50/sumo/net.xml --additional-files automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_50/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_50/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+Simulation with 50 vehicles completed
+Running simulation with 60 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 0
+beta: 1.0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.9995
+global_reward: true
+handcraft: false
+high: 1
+horizon: 3000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 100
+n_veh: 60
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_60/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: false
+tmp: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200
+
+netconvert -o automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_60/sumo/net.xml -n automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_60/sumo/nod.xml -e automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_60/sumo/edg.xml -x automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_60/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_60/sumo/net.xml --additional-files automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_60/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_60/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+Simulation with 60 vehicles completed
+Running simulation with 70 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 0
+beta: 1.0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.9995
+global_reward: true
+handcraft: false
+high: 1
+horizon: 3000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 100
+n_veh: 70
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_70/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: false
+tmp: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200
+
+netconvert -o automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_70/sumo/net.xml -n automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_70/sumo/nod.xml -e automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_70/sumo/edg.xml -x automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_70/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_70/sumo/net.xml --additional-files automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_70/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_70/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+Simulation with 70 vehicles completed
+Running simulation with 80 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 0
+beta: 1.0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.9995
+global_reward: true
+handcraft: false
+high: 1
+horizon: 3000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 100
+n_veh: 80
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_80/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: false
+tmp: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200
+
+netconvert -o automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_80/sumo/net.xml -n automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_80/sumo/nod.xml -e automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_80/sumo/edg.xml -x automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_80/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_80/sumo/net.xml --additional-files automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_80/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_80/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+Simulation with 80 vehicles completed
+Running simulation with 90 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 0
+beta: 1.0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.9995
+global_reward: true
+handcraft: false
+high: 1
+horizon: 3000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 100
+n_veh: 90
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_90/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: false
+tmp: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200
+
+netconvert -o automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_90/sumo/net.xml -n automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_90/sumo/nod.xml -e automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_90/sumo/edg.xml -x automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_90/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_90/sumo/net.xml --additional-files automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_90/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/single_ring_C_200/different_veh/veh_90/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+Simulation with 90 vehicles completed

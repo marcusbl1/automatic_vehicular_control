@@ -1,0 +1,24 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   env.py
+	modified:   exp.py
+	deleted:    logs/log_2python
+	modified:   ring.py
+	modified:   ring_different_veh_no_RL.py
+	modified:   statistics/FD.ipynb
+	modified:   ut.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	logs/log_3.txt
+	logs/log_4.txt
+	logs/log_5.txt
+	logs/log_6.txt
+	logs/log_7.txt
+	pareto/
+
+no changes added to commit (use "git add" and/or "git commit -a")

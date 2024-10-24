@@ -89,6 +89,7 @@ class Main(Config):
         # Compute the current learning rate using the schedule
         return c.schedule(c.get('lr', 1e-4), c.get('lr_schedule'))
 
+    # log statistics for each episodes(ii)
     def log_stats(c, stats, ii=None, n_ii=None, print_time=False):
         # Log statistics, optionally including iteration info and total time
         stats = {k: v for k, v in stats.items() if v is not None}
@@ -175,7 +176,12 @@ class Main(Config):
         c._env = c.create_env() # Create NormEnv
  
         # Instantiate the algorithm (e.g., PPO, DQN)
+        # if c.alg: 
+        #     c._alg = (eval(c.alg) if isinstance(c.alg, str) else c.alg)(c)
+        # else:
+        #      c._alg  = None
         c._alg = (eval(c.alg) if isinstance(c.alg, str) else c.alg)(c)
+   
         c.set_model()
         c._model.train()
         c._model.to(c.device)
@@ -290,20 +296,19 @@ class Main(Config):
         done = False
         a_space = c.action_space
         step = 0
-        density = c.var().n_veh/(c.var().circumference*1e-3)
-        vehicle_flow = c._env.mean_speed * 3.6 * density 
-        print(f"Current vehicle flow: {vehicle_flow:.2f} at new episode")
-
+        # print(f"Current vehicle flow: {vehicle_flow:.2f} at new episode")
         while step < c.horizon + c.skip_stat_steps and not done:
             # Generate an action from the model's policy
+            # if c._alg:
             pred = from_torch(c._model(to_torch(rollout.obs[-1]), value=False, policy=True, argmax=False))
             if c.get('aclip', True) and isinstance(a_space, Box):
                 # Clip the action if necessary
                 pred.action = np.clip(pred.action, a_space.low, a_space.high)
             rollout.append(**pred)
-
             # Take a step in the environment
             ret = c._env.step(rollout.action[-1])
+            # else: 
+            #      ret = c._env.step()
             if isinstance(ret, tuple):
                 obs, reward, done, info = ret
                 ret = dict(obs=obs, reward=reward, done=done, info=info)
@@ -316,8 +321,6 @@ class Main(Config):
         # Collect stats from the environment
         # rollout_flow_each_step.append(len(c._env.passed_vehicle))
         # Flow= (Number of vehicles passing a point×3600) / Simulation Time (seconds) 
-        vehicle_flow = c._env.mean_speed * density  * 3.6
-        print(f"Current vehicle flow: {vehicle_flow:.2f} at step : {step:.2f}")
 
         stats = dict(rollout_time=time() - t_start, **c.get_env_stats())
         return rollout, stats
@@ -362,28 +365,31 @@ class Main(Config):
             reward_mean=np.mean(reward),
             reward_std=np.std(reward),
 
-            speed_reward_mean=np.mean(rollout.speed_reward) if rollout.speed_reward else None,
-            speed_reward_std=np.std(rollout.speed_reward) if rollout.speed_reward else None,
-            # Other stats related to safety measures
-            ssm_mean=np.mean(rollout.ssm),
-            ssm_std=np.std(rollout.ssm),
+            speed_reward_mean = np.mean(rollout.speed_reward) if 'speed_reward' in rollout.keys() and rollout.speed_reward else None,
+            speed_reward_std = np.std(rollout.speed_reward) if 'speed_reward' in rollout.keys() and rollout.speed_reward else None,
 
-            ttc_mean=np.mean(rollout.ttc) if rollout.ttc else None,
-            ttc_std=np.std(rollout.ttc) if rollout.ttc else None,
-            drac_mean=np.mean(rollout.drac) if rollout.drac else None,
-            drac_std=np.std(rollout.drac) if rollout.drac else None,
-            pet_mean=np.mean(rollout.pet) if rollout.pet else None,
-            pet_std=np.std(rollout.pet) if rollout.pet else None,
+            ssm_mean = np.mean(rollout.ssm) if 'ssm' in rollout.keys() and rollout.ssm else None,
+            ssm_std = np.std(rollout.ssm) if 'ssm' in rollout.keys() and rollout.ssm else None,
 
-            raw_ttc_mean=np.mean(rollout.raw_ttc) if rollout.raw_ttc else None,
-            raw_ttc_std=np.std(rollout.raw_ttc) if rollout.raw_ttc else None,
-            raw_drac_mean=np.mean(rollout.raw_drac) if rollout.raw_drac else None,
-            raw_drac_std=np.std(rollout.raw_drac) if rollout.raw_drac else None,
+            ttc_mean = np.mean(rollout.ttc) if 'ttc' in rollout.keys() and rollout.ttc else None,
+            ttc_std = np.std(rollout.ttc) if 'ttc' in rollout.keys() and rollout.ttc else None,
 
-            value_mean=np.mean(value_) if c.use_critic else None,
+            drac_mean = np.mean(rollout.drac) if 'drac' in rollout.keys() and rollout.drac else None,
+            drac_std = np.std(rollout.drac) if 'drac' in rollout.keys() and rollout.drac else None,
+
+            pet_mean = np.mean(rollout.pet) if 'pet' in rollout.keys() and rollout.pet else None,
+            pet_std = np.std(rollout.pet) if 'pet' in rollout.keys() and rollout.pet else None,
+
+            raw_ttc_mean = np.mean(rollout.raw_ttc) if 'raw_ttc' in rollout.keys() and rollout.raw_ttc else None,
+            raw_ttc_std = np.std(rollout.raw_ttc) if 'raw_ttc' in rollout.keys() and rollout.raw_ttc else None,
+
+            raw_drac_mean = np.mean(rollout.raw_drac) if 'raw_drac' in rollout.keys() and rollout.raw_drac else None,
+            raw_drac_std = np.std(rollout.raw_drac) if 'raw_drac' in rollout.keys() and rollout.raw_drac else None,
+
+            value_mean=np.mean(value_) if c.use_critic else 0,
             ret_mean=np.mean(ret),
-            adv_mean=np.mean(adv) if c.use_critic else None,
-            explained_variance=explained_variance(value_[:len(ret)], ret) if c.use_critic else None
+            adv_mean=np.mean(adv) if c.use_critic else 0,
+            explained_variance=explained_variance(value_[:len(ret)], ret) if c.use_critic else 0
         )
         log(rollout_end_time = time() - t_start)
         return rollout
@@ -421,7 +427,7 @@ class Main(Config):
             c._i += 1
         c.on_step_start()  # save stat
         gd_stats = {}
-        with torch.no_grad(): # collect the rollout after training finishing
+        with torch.no_grad(): # collect the rollout after training finishing to evaluate final model
             rollouts = c.rollouts()
             c.on_step_end(gd_stats)
         c.on_train_end()
@@ -430,8 +436,8 @@ class Main(Config):
         # Evaluation without training
         c.setdefaults(alg='PPO')
         c._env = c.create_env()
-
         c._alg = (eval(c.alg) if isinstance(c.alg, str) else c.alg)(c)
+      
         c.set_model()
         c._model.eval()
         c._results = pd.DataFrame(index=pd.Series(name='step'))
@@ -502,18 +508,22 @@ class Main(Config):
         c.log(format_yaml({k: v for k, v in c.items() if not k.startswith('_')}))
         c.setdefaults(n_workers=1, n_rollouts_per_worker=c.n_rollouts_per_step, use_ray=False)
         c.on_train_start()
-        c._env = c.create_env() # Create NormEnv
-        c.set_model()
         done = False
         flow_eps = []
+        mean_speed_eps = []
         density = c.var().n_veh/(c.var().circumference*1e-3)
-
         while c._i < c.n_steps: #episode loop 
             ret = c._env.reset()
             step = 0
-            vehicle_flow = c._env.mean_speed * 3.6 * density 
+        
+            mean_speed_ep = []
+            mean_speed = np.mean([v.speed for v in c._env.ts.vehicles])
+            mean_speed_ep.append(mean_speed)
+            
             flow_ep = []
+            vehicle_flow = mean_speed * 3.6 * density 
             flow_ep.append(vehicle_flow)
+            
             # print(f"Current vehicle flow: {vehicle_flow:.2f} at new episode")
             while step < c.horizon + c.skip_stat_steps and not done: # step loop
                 # Take a step in the environment
@@ -522,11 +532,21 @@ class Main(Config):
                     obs, reward, done, info = ret
                     ret = dict(obs=obs, reward=reward, done=done, info=info)
                 done = ret.setdefault('done', False)
-                vehicle_flow = c._env.mean_speed * density  * 3.6
+                
+                mean_speed = np.mean([v.speed for v in c._env.ts.vehicles])
+                mean_speed_ep.append(mean_speed)
+                
+                vehicle_flow = mean_speed * 3.6 * density 
                 flow_ep.append(vehicle_flow)
+                
+            
                 # print(f"Current vehicle flow: {vehicle_flow:.2f} at step : {step:.2f}")
                 step += 1
+                
             flow_eps.append(np.array(flow_ep))
+            mean_speed_eps.append(np.array(mean_speed_ep))
+
             c._i += 1
         
         np.save((c.res+"flow_eps"), np.array(flow_eps))
+        np.save((c.res+"mean_speed_eps"), np.array(mean_speed_eps))

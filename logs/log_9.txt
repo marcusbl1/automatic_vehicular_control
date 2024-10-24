@@ -1,0 +1,548 @@
+Running simulation with 2 vehicles
+accel_feature: false
+accel_penalty: 0
+act_type: accel
+adv_norm: false
+alg: TRPO
+av: 1
+beta: 0
+center_reward: true
+circ_feature: false
+circumference: 200
+circumference_max: 300
+circumference_min: 200
+circumference_range: null
+collision_penalty: 100
+debug: false
+device: cpu
+disable_amp: true
+e: false
+gamma: 0.999
+global_reward: true
+high: 1
+horizon: 1000
+initial_space: free
+lc_act_type: discrete
+logger: true
+low: -1
+lr: 0.0001
+main: true
+max_accel: 0.5
+max_decel: 0.5
+max_speed: 10
+mrtl: false
+n_lanes: 1
+n_rollouts_per_step: 45
+n_steps: 50
+n_veh: 2
+n_workers: 1
+name: different_veh
+norm_action: true
+norm_reward: true
+opt_level: O0
+redef_sumo: false
+render: false
+res: /Users/xiawu/sumo_test/automatic_vehicular_control/pareto/test_av_1_ring_C_200/different_veh/veh_2/
+residual_transfer: false
+scale_drac: 1
+scale_pet: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+sigma: 0.2
+sim_step: 0.1
+skip_stat_steps: 0
+step_save: 5
+tb: true
+tmp: false
+use_critic: 'False'
+warmup_steps: 0
+wb: false
+
+netconvert -o automatic_vehicular_control/pareto/test_av_1_ring_C_200/different_veh/veh_2/sumo/net.xml -n automatic_vehicular_control/pareto/test_av_1_ring_C_200/different_veh/veh_2/sumo/nod.xml -e automatic_vehicular_control/pareto/test_av_1_ring_C_200/different_veh/veh_2/sumo/edg.xml -x automatic_vehicular_control/pareto/test_av_1_ring_C_200/different_veh/veh_2/sumo/con.xml --no-turnarounds true
+Warning: Environment variable SUMO_HOME is not set properly, disabling XML validation. Set 'auto' or 'always' for web lookups.
+Warning: Environment variable SUMO_HOME is not set, using built in type maps.
+sumo --net-file automatic_vehicular_control/pareto/test_av_1_ring_C_200/different_veh/veh_2/sumo/net.xml --additional-files automatic_vehicular_control/pareto/test_av_1_ring_C_200/different_veh/veh_2/sumo/add.xml --gui-settings-file automatic_vehicular_control/pareto/test_av_1_ring_C_200/different_veh/veh_2/sumo/gui.xml --begin 0 --step-length 0.1 --no-step-log true --time-to-teleport -1 --no-warnings true --collision.action remove --collision.check-junctions true --max-depart-delay 0.5 --random true --start true
+ Retrying in 1 seconds
+i 0 | ii  0 | rollout_time 1.86 | horizon 1e+03 | speed 2.15 | speed_rl 1.7
+    | speed_rl_std 0.922 | speed_human 2.6 | collisions 0 | collisions_human 0
+    | fuel 6.07e+05 | circumference 200 | beta 0
+i 0 | ii  0 | reward_mean 0.0223 | reward_std 0.109 | speed_reward_mean 0.215
+    | speed_reward_std 0.085 | ssm_mean 0.349 | ssm_std 0.139 | ttc_mean 0.355
+    | ttc_std 0.136 | drac_mean -0.343 | drac_std 0.151 | pet_mean 0.998
+    | pet_std 0.0214 | raw_ttc_mean 2.78e+03 | raw_ttc_std 1.36e+04
+    | raw_drac_mean 0.0466 | raw_drac_std 0.127 | value_mean -0.000316 | ret_mean 1.19
+    | adv_mean 1.19 | explained_variance 2.05e-05
+i 0 | ii  0 | rollout_end_time 0.0532
+i 0 | ii  1 | rollout_time 0.692 | horizon 1e+03 | speed 1.15 | speed_rl 0.689
+    | speed_rl_std 0.452 | speed_human 1.61 | collisions 0 | collisions_human 0
+    | fuel 6.61e+05 | circumference 200 | beta 0
+i 0 | ii  1 | reward_mean -0.00624 | reward_std 0.0106 | speed_reward_mean 0.115
+    | speed_reward_std 0.102 | ssm_mean 0.341 | ssm_std 0.135 | ttc_mean 0.344
+    | ttc_std 0.134 | drac_mean -0.339 | drac_std 0.148 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.71e+03 | raw_ttc_std 6.52e+03 | raw_drac_mean 0.0471
+    | raw_drac_std 0.126 | value_mean -0.000469 | ret_mean -2.43 | adv_mean -2.43
+    | explained_variance 9.78e-05
+i 0 | ii  1 | rollout_end_time 0.0367
+i 0 | ii  2 | rollout_time 0.641 | horizon 1e+03 | speed 1.21 | speed_rl 0.754
+    | speed_rl_std 0.481 | speed_human 1.67 | collisions 0 | collisions_human 0
+    | fuel 6.21e+05 | circumference 200 | beta 0
+i 0 | ii  2 | reward_mean -0.00182 | reward_std 0.00472 | speed_reward_mean 0.121
+    | speed_reward_std 0.0988 | ssm_mean 0.344 | ssm_std 0.138 | ttc_mean 0.352
+    | ttc_std 0.138 | drac_mean -0.337 | drac_std 0.15 | pet_mean 0.998
+    | pet_std 0.0219 | raw_ttc_mean 1.04e+04 | raw_ttc_std 2.51e+05
+    | raw_drac_mean 0.0467 | raw_drac_std 0.123 | value_mean -0.000489
+    | ret_mean -0.84 | adv_mean -0.839 | explained_variance 0.000392
+i 0 | ii  2 | rollout_end_time 0.0451
+i 0 | ii  3 | rollout_time 0.64 | horizon 1e+03 | speed 0.908 | speed_rl 0.447
+    | speed_rl_std 0.252 | speed_human 1.37 | collisions 0 | collisions_human 0
+    | fuel 6.67e+05 | circumference 200 | beta 0
+i 0 | ii  3 | reward_mean -0.00254 | reward_std 0.00457 | speed_reward_mean 0.0908
+    | speed_reward_std 0.106 | ssm_mean 0.332 | ssm_std 0.134 | ttc_mean 0.334
+    | ttc_std 0.133 | drac_mean -0.33 | drac_std 0.147 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.84e+03 | raw_ttc_std 8.3e+03 | raw_drac_mean 0.0462
+    | raw_drac_std 0.122 | value_mean -0.000497 | ret_mean -1.34 | adv_mean -1.34
+    | explained_variance 0.000138
+i 0 | ii  3 | rollout_end_time 0.0297
+i 0 | ii  4 | rollout_time 0.637 | horizon 1e+03 | speed 0.634 | speed_rl 0.168
+    | speed_rl_std 0.131 | speed_human 1.1 | collisions 0 | collisions_human 0
+    | fuel 8.03e+05 | circumference 200 | beta 0
+i 0 | ii  4 | reward_mean -0.00301 | reward_std 0.00471 | speed_reward_mean 0.0634
+    | speed_reward_std 0.112 | ssm_mean 0.355 | ssm_std 0.144 | ttc_mean 0.357
+    | ttc_std 0.146 | drac_mean -0.352 | drac_std 0.155 | pet_mean 1 | pet_std 0.002
+    | raw_ttc_mean 2.84e+03 | raw_ttc_std 1e+04 | raw_drac_mean 0.047
+    | raw_drac_std 0.125 | value_mean -0.000625 | ret_mean -1.62 | adv_mean -1.62
+    | explained_variance 0.000313
+i 0 | ii  4 | rollout_end_time 0.0318
+i 0 | ii  5 | rollout_time 0.631 | horizon 1e+03 | speed 0.819 | speed_rl 0.354
+    | speed_rl_std 0.202 | speed_human 1.28 | collisions 0 | collisions_human 0
+    | fuel 7.2e+05 | circumference 200 | beta 0
+i 0 | ii  5 | reward_mean -0.00164 | reward_std 0.00412 | speed_reward_mean 0.0819
+    | speed_reward_std 0.101 | ssm_mean 0.325 | ssm_std 0.127 | ttc_mean 0.326
+    | ttc_std 0.128 | drac_mean -0.324 | drac_std 0.139 | pet_mean 0.997
+    | pet_std 0.0315 | raw_ttc_mean 1.35e+03 | raw_ttc_std 6.01e+03
+    | raw_drac_mean 0.0476 | raw_drac_std 0.127 | value_mean -0.000561
+    | ret_mean -1.03 | adv_mean -1.03 | explained_variance 0.000465
+i 0 | ii  5 | rollout_end_time 0.0287
+i 0 | ii  6 | rollout_time 0.623 | horizon 1e+03 | speed 1.47 | speed_rl 1.01
+    | speed_rl_std 0.572 | speed_human 1.93 | collisions 0 | collisions_human 0
+    | fuel 6.12e+05 | circumference 200 | beta 0
+i 0 | ii  6 | reward_mean 0.00124 | reward_std 0.00388 | speed_reward_mean 0.147
+    | speed_reward_std 0.0916 | ssm_mean 0.351 | ssm_std 0.145 | ttc_mean 0.351
+    | ttc_std 0.14 | drac_mean -0.35 | drac_std 0.161 | pet_mean 0.996
+    | pet_std 0.0442 | raw_ttc_mean 6.13e+03 | raw_ttc_std 6.58e+04
+    | raw_drac_mean 0.046 | raw_drac_std 0.122 | value_mean -0.000426 | ret_mean 0.324
+    | adv_mean 0.324 | explained_variance 0.000592
+i 0 | ii  6 | rollout_end_time 0.0239
+i 0 | ii  7 | rollout_time 0.627 | horizon 1e+03 | speed 0.802 | speed_rl 0.339
+    | speed_rl_std 0.245 | speed_human 1.27 | collisions 0 | collisions_human 0
+    | fuel 7.2e+05 | circumference 200 | beta 0
+i 0 | ii  7 | reward_mean -0.00158 | reward_std 0.0047 | speed_reward_mean 0.0802
+    | speed_reward_std 0.109 | ssm_mean 0.355 | ssm_std 0.162 | ttc_mean 0.359
+    | ttc_std 0.161 | drac_mean -0.351 | drac_std 0.174 | pet_mean 0.999
+    | pet_std 0.0177 | raw_ttc_mean nan | raw_ttc_std nan | raw_drac_mean 0.0479
+    | raw_drac_std 0.129 | value_mean -0.000599 | ret_mean -1.03 | adv_mean -1.03
+    | explained_variance 0.000582
+i 0 | ii  7 | rollout_end_time 0.0301
+i 0 | ii  8 | rollout_time 0.624 | horizon 1e+03 | speed 0.798 | speed_rl 0.336
+    | speed_rl_std 0.218 | speed_human 1.26 | collisions 0 | collisions_human 0
+    | fuel 7.26e+05 | circumference 200 | beta 0
+i 0 | ii  8 | reward_mean -0.00153 | reward_std 0.00462 | speed_reward_mean 0.0798
+    | speed_reward_std 0.107 | ssm_mean 0.33 | ssm_std 0.136 | ttc_mean 0.337
+    | ttc_std 0.137 | drac_mean -0.323 | drac_std 0.147 | pet_mean 0.998
+    | pet_std 0.0293 | raw_ttc_mean nan | raw_ttc_std nan | raw_drac_mean 0.0482
+    | raw_drac_std 0.13 | value_mean -0.000548 | ret_mean -1.07 | adv_mean -1.07
+    | explained_variance 0.000341
+i 0 | ii  8 | rollout_end_time 0.0285
+i 0 | ii  9 | rollout_time 0.616 | horizon 1e+03 | speed 0.625 | speed_rl 0.161
+    | speed_rl_std 0.113 | speed_human 1.09 | collisions 0 | collisions_human 0
+    | fuel 8.06e+05 | circumference 200 | beta 0
+i 0 | ii  9 | reward_mean -0.00219 | reward_std 0.00494 | speed_reward_mean 0.0625
+    | speed_reward_std 0.111 | ssm_mean 0.34 | ssm_std 0.141 | ttc_mean 0.344
+    | ttc_std 0.144 | drac_mean -0.336 | drac_std 0.153 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean nan | raw_ttc_std nan | raw_drac_mean 0.0477 | raw_drac_std 0.129
+    | value_mean -0.000656 | ret_mean -1.35 | adv_mean -1.35
+    | explained_variance 0.00047
+i 0 | ii  9 | rollout_end_time 0.0244
+i 0 | ii 10 | rollout_time 0.62 | horizon 1e+03 | speed 1.03 | speed_rl 0.56
+    | speed_rl_std 0.301 | speed_human 1.49 | collisions 0 | collisions_human 0
+    | fuel 5.97e+05 | circumference 200 | beta 0
+i 0 | ii 10 | reward_mean -0.000257 | reward_std 0.00483 | speed_reward_mean 0.103
+    | speed_reward_std 0.105 | ssm_mean 0.327 | ssm_std 0.131 | ttc_mean 0.326
+    | ttc_std 0.129 | drac_mean -0.329 | drac_std 0.144 | pet_mean 1 | pet_std 0.00366
+    | raw_ttc_mean 1.36e+03 | raw_ttc_std 4.84e+03 | raw_drac_mean 0.0464
+    | raw_drac_std 0.125 | value_mean -0.00047 | ret_mean -0.662 | adv_mean -0.661
+    | explained_variance 0.000122
+i 0 | ii 10 | rollout_end_time 0.033
+i 0 | ii 11 | rollout_time 0.669 | horizon 1e+03 | speed 0.725 | speed_rl 0.261
+    | speed_rl_std 0.205 | speed_human 1.19 | collisions 0 | collisions_human 0
+    | fuel 7.53e+05 | circumference 200 | beta 0
+i 0 | ii 11 | reward_mean -0.00161 | reward_std 0.00509 | speed_reward_mean 0.0725
+    | speed_reward_std 0.106 | ssm_mean 0.347 | ssm_std 0.14 | ttc_mean 0.353
+    | ttc_std 0.144 | drac_mean -0.342 | drac_std 0.149 | pet_mean 0.99
+    | pet_std 0.0642 | raw_ttc_mean 2.33e+03 | raw_ttc_std 8.27e+03
+    | raw_drac_mean 0.0489 | raw_drac_std 0.134 | value_mean -0.000619
+    | ret_mean -1.12 | adv_mean -1.12 | explained_variance 0.000567
+i 0 | ii 11 | rollout_end_time 0.0254
+i 0 | ii 12 | rollout_time 0.621 | horizon 1e+03 | speed 0.888 | speed_rl 0.427
+    | speed_rl_std 0.356 | speed_human 1.35 | collisions 0 | collisions_human 0
+    | fuel 7.1e+05 | circumference 200 | beta 0
+i 0 | ii 12 | reward_mean -0.000723 | reward_std 0.00525 | speed_reward_mean 0.0888
+    | speed_reward_std 0.106 | ssm_mean 0.345 | ssm_std 0.144 | ttc_mean 0.351
+    | ttc_std 0.145 | drac_mean -0.339 | drac_std 0.155 | pet_mean 0.999
+    | pet_std 0.0211 | raw_ttc_mean 4.07e+03 | raw_ttc_std 2.64e+04
+    | raw_drac_mean 0.0484 | raw_drac_std 0.13 | value_mean -0.000563
+    | ret_mean -0.685 | adv_mean -0.685 | explained_variance 0.000527
+i 0 | ii 12 | rollout_end_time 0.026
+i 0 | ii 13 | rollout_time 0.618 | horizon 1e+03 | speed 0.709 | speed_rl 0.245
+    | speed_rl_std 0.217 | speed_human 1.17 | collisions 0 | collisions_human 0
+    | fuel 7.63e+05 | circumference 200 | beta 0
+i 0 | ii 13 | reward_mean -0.00158 | reward_std 0.00555 | speed_reward_mean 0.0709
+    | speed_reward_std 0.109 | ssm_mean 0.351 | ssm_std 0.157 | ttc_mean 0.352
+    | ttc_std 0.156 | drac_mean -0.35 | drac_std 0.169 | pet_mean 0.999
+    | pet_std 0.0146 | raw_ttc_mean nan | raw_ttc_std nan | raw_drac_mean 0.0477
+    | raw_drac_std 0.13 | value_mean -0.000561 | ret_mean -1.25 | adv_mean -1.25
+    | explained_variance 0.000246
+i 0 | ii 13 | rollout_end_time 0.0292
+i 0 | ii 14 | rollout_time 0.621 | horizon 1e+03 | speed 0.772 | speed_rl 0.308
+    | speed_rl_std 0.267 | speed_human 1.24 | collisions 0 | collisions_human 0
+    | fuel 7.33e+05 | circumference 200 | beta 0
+i 0 | ii 14 | reward_mean -0.00118 | reward_std 0.00555 | speed_reward_mean 0.0772
+    | speed_reward_std 0.108 | ssm_mean 0.344 | ssm_std 0.139 | ttc_mean 0.35
+    | ttc_std 0.142 | drac_mean -0.339 | drac_std 0.15 | pet_mean 0.998
+    | pet_std 0.0227 | raw_ttc_mean 7.86e+03 | raw_ttc_std 1.84e+05
+    | raw_drac_mean 0.0486 | raw_drac_std 0.132 | value_mean -0.000649
+    | ret_mean -0.936 | adv_mean -0.935 | explained_variance 0.000653
+i 0 | ii 14 | rollout_end_time 0.0266
+i 0 | ii 15 | rollout_time 0.622 | horizon 1e+03 | speed 1.12 | speed_rl 0.661
+    | speed_rl_std 0.332 | speed_human 1.58 | collisions 0 | collisions_human 0
+    | fuel 6.15e+05 | circumference 200 | beta 0
+i 0 | ii 15 | reward_mean 0.000692 | reward_std 0.00595 | speed_reward_mean 0.112
+    | speed_reward_std 0.113 | ssm_mean 0.331 | ssm_std 0.134 | ttc_mean 0.331
+    | ttc_std 0.132 | drac_mean -0.331 | drac_std 0.148 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.88e+03 | raw_ttc_std 9.05e+03 | raw_drac_mean 0.0444
+    | raw_drac_std 0.117 | value_mean -0.000442 | ret_mean -0.494 | adv_mean -0.493
+    | explained_variance 6.26e-05
+i 0 | ii 15 | rollout_end_time 0.0272
+i 0 | ii 16 | rollout_time 0.62 | horizon 1e+03 | speed 1.19 | speed_rl 0.729
+    | speed_rl_std 0.349 | speed_human 1.66 | collisions 0 | collisions_human 0
+    | fuel 5.84e+05 | circumference 200 | beta 0
+i 0 | ii 16 | reward_mean 0.00101 | reward_std 0.00561 | speed_reward_mean 0.119
+    | speed_reward_std 0.109 | ssm_mean 0.337 | ssm_std 0.138 | ttc_mean 0.337
+    | ttc_std 0.135 | drac_mean -0.337 | drac_std 0.151 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 2.28e+03 | raw_ttc_std 1.38e+04 | raw_drac_mean 0.0452
+    | raw_drac_std 0.12 | value_mean -0.000434 | ret_mean -0.213 | adv_mean -0.213
+    | explained_variance 0.000108
+i 0 | ii 16 | rollout_end_time 0.0253
+i 0 | ii 17 | rollout_time 0.67 | horizon 1e+03 | speed 0.663 | speed_rl 0.199
+    | speed_rl_std 0.159 | speed_human 1.13 | collisions 0 | collisions_human 0
+    | fuel 7.88e+05 | circumference 200 | beta 0
+i 0 | ii 17 | reward_mean -0.00159 | reward_std 0.00536 | speed_reward_mean 0.0663
+    | speed_reward_std 0.11 | ssm_mean 0.348 | ssm_std 0.143 | ttc_mean 0.351
+    | ttc_std 0.145 | drac_mean -0.344 | drac_std 0.155 | pet_mean 1 | pet_std 0.00473
+    | raw_ttc_mean 3.65e+03 | raw_ttc_std 2.3e+04 | raw_drac_mean 0.0481
+    | raw_drac_std 0.13 | value_mean -0.000651 | ret_mean -1.14 | adv_mean -1.14
+    | explained_variance 0.00054
+i 0 | ii 17 | rollout_end_time 0.0277
+i 0 | ii 18 | rollout_time 0.657 | horizon 1e+03 | speed 0.986 | speed_rl 0.53
+    | speed_rl_std 0.42 | speed_human 1.44 | collisions 0 | collisions_human 0
+    | fuel 7.03e+05 | circumference 200 | beta 0
+i 0 | ii 18 | reward_mean -6.75e-06 | reward_std 0.0049 | speed_reward_mean 0.0986
+    | speed_reward_std 0.101 | ssm_mean 0.338 | ssm_std 0.135 | ttc_mean 0.347
+    | ttc_std 0.137 | drac_mean -0.329 | drac_std 0.146 | pet_mean 0.997
+    | pet_std 0.0299 | raw_ttc_mean 1.87e+03 | raw_ttc_std 5.93e+03
+    | raw_drac_mean 0.0486 | raw_drac_std 0.132 | value_mean -0.000551
+    | ret_mean -0.351 | adv_mean -0.35 | explained_variance 0.000722
+i 0 | ii 18 | rollout_end_time 0.0287
+i 0 | ii 19 | rollout_time 0.63 | horizon 1e+03 | speed 1.37 | speed_rl 0.907
+    | speed_rl_std 0.388 | speed_human 1.83 | collisions 0 | collisions_human 0
+    | fuel 5.62e+05 | circumference 200 | beta 0
+i 0 | ii 19 | reward_mean 0.00182 | reward_std 0.00458 | speed_reward_mean 0.137
+    | speed_reward_std 0.0928 | ssm_mean 0.332 | ssm_std 0.133 | ttc_mean 0.334
+    | ttc_std 0.131 | drac_mean -0.33 | drac_std 0.147 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.55e+03 | raw_ttc_std 7.3e+03 | raw_drac_mean 0.0462
+    | raw_drac_std 0.125 | value_mean -0.000417 | ret_mean 0.208 | adv_mean 0.208
+    | explained_variance 4.59e-05
+i 0 | ii 19 | rollout_end_time 0.0253
+i 0 | ii 20 | rollout_time 0.632 | horizon 1e+03 | speed 0.897 | speed_rl 0.435
+    | speed_rl_std 0.219 | speed_human 1.36 | collisions 0 | collisions_human 0
+    | fuel 6.97e+05 | circumference 200 | beta 0
+i 0 | ii 20 | reward_mean -0.000444 | reward_std 0.00503 | speed_reward_mean 0.0897
+    | speed_reward_std 0.108 | ssm_mean 0.334 | ssm_std 0.134 | ttc_mean 0.335
+    | ttc_std 0.132 | drac_mean -0.333 | drac_std 0.149 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.73e+03 | raw_ttc_std 8.16e+03 | raw_drac_mean 0.0475
+    | raw_drac_std 0.129 | value_mean -0.000501 | ret_mean -0.713 | adv_mean -0.712
+    | explained_variance 0.0003
+i 0 | ii 20 | rollout_end_time 0.0276
+i 0 | ii 21 | rollout_time 0.62 | horizon 1e+03 | speed 0.913 | speed_rl 0.447
+    | speed_rl_std 0.271 | speed_human 1.38 | collisions 0 | collisions_human 0
+    | fuel 6.59e+05 | circumference 200 | beta 0
+i 0 | ii 21 | reward_mean -0.000397 | reward_std 0.00492 | speed_reward_mean 0.0913
+    | speed_reward_std 0.109 | ssm_mean 0.342 | ssm_std 0.14 | ttc_mean 0.34
+    | ttc_std 0.138 | drac_mean -0.343 | drac_std 0.153 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 2.1e+03 | raw_ttc_std 1e+04 | raw_drac_mean 0.0451
+    | raw_drac_std 0.118 | value_mean -0.000485 | ret_mean -0.768 | adv_mean -0.767
+    | explained_variance 8.45e-05
+i 0 | ii 21 | rollout_end_time 0.0242
+i 0 | ii 22 | rollout_time 0.625 | horizon 1e+03 | speed 1.12 | speed_rl 0.659
+    | speed_rl_std 0.438 | speed_human 1.58 | collisions 0 | collisions_human 0
+    | fuel 6.39e+05 | circumference 200 | beta 0
+i 0 | ii 22 | reward_mean 0.000547 | reward_std 0.00423 | speed_reward_mean 0.112
+    | speed_reward_std 0.0939 | ssm_mean 0.359 | ssm_std 0.149 | ttc_mean 0.365
+    | ttc_std 0.15 | drac_mean -0.353 | drac_std 0.16 | pet_mean 0.994
+    | pet_std 0.0455 | raw_ttc_mean nan | raw_ttc_std nan | raw_drac_mean 0.0477
+    | raw_drac_std 0.129 | value_mean -0.000548 | ret_mean -0.0486 | adv_mean -0.0481
+    | explained_variance 0.00111
+i 0 | ii 22 | rollout_end_time 0.0247
+i 0 | ii 23 | rollout_time 0.687 | horizon 1e+03 | speed 0.882 | speed_rl 0.418
+    | speed_rl_std 0.177 | speed_human 1.35 | collisions 0 | collisions_human 0
+    | fuel 7.07e+05 | circumference 200 | beta 0
+i 0 | ii 23 | reward_mean -0.000527 | reward_std 0.00495 | speed_reward_mean 0.0882
+    | speed_reward_std 0.109 | ssm_mean 0.332 | ssm_std 0.135 | ttc_mean 0.335
+    | ttc_std 0.136 | drac_mean -0.329 | drac_std 0.145 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean nan | raw_ttc_std nan | raw_drac_mean 0.0467 | raw_drac_std 0.124
+    | value_mean -0.000496 | ret_mean -0.766 | adv_mean -0.766
+    | explained_variance 0.000189
+i 0 | ii 23 | rollout_end_time 0.0219
+i 0 | ii 24 | rollout_time 0.626 | horizon 1e+03 | speed 1.89 | speed_rl 1.43
+    | speed_rl_std 0.507 | speed_human 2.34 | collisions 0 | collisions_human 0
+    | fuel 6.03e+05 | circumference 200 | beta 0
+i 0 | ii 24 | reward_mean 0.00389 | reward_std 0.00355 | speed_reward_mean 0.189
+    | speed_reward_std 0.0778 | ssm_mean 0.348 | ssm_std 0.14 | ttc_mean 0.354
+    | ttc_std 0.137 | drac_mean -0.342 | drac_std 0.153 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 6.38e+03 | raw_ttc_std 1.34e+05 | raw_drac_mean 0.0455
+    | raw_drac_std 0.122 | value_mean -0.000354 | ret_mean 1.18 | adv_mean 1.18
+    | explained_variance -2.8e-05
+i 0 | ii 24 | rollout_end_time 0.0216
+i 0 | ii 25 | rollout_time 0.691 | horizon 1e+03 | speed 1.42 | speed_rl 0.959
+    | speed_rl_std 0.451 | speed_human 1.87 | collisions 0 | collisions_human 0
+    | fuel 5.91e+05 | circumference 200 | beta 0
+i 0 | ii 25 | reward_mean 0.00157 | reward_std 0.00428 | speed_reward_mean 0.142
+    | speed_reward_std 0.102 | ssm_mean 0.345 | ssm_std 0.139 | ttc_mean 0.349
+    | ttc_std 0.136 | drac_mean -0.342 | drac_std 0.153 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.84e+04 | raw_ttc_std 5.05e+05 | raw_drac_mean 0.0461
+    | raw_drac_std 0.124 | value_mean -0.0004 | ret_mean 0.333 | adv_mean 0.333
+    | explained_variance 0.000201
+i 0 | ii 25 | rollout_end_time 0.022
+i 0 | ii 26 | rollout_time 0.622 | horizon 1e+03 | speed 0.79 | speed_rl 0.326
+    | speed_rl_std 0.172 | speed_human 1.25 | collisions 0 | collisions_human 0
+    | fuel 7.53e+05 | circumference 200 | beta 0
+i 0 | ii 26 | reward_mean -0.000926 | reward_std 0.00431 | speed_reward_mean 0.079
+    | speed_reward_std 0.113 | ssm_mean 0.337 | ssm_std 0.136 | ttc_mean 0.336
+    | ttc_std 0.132 | drac_mean -0.339 | drac_std 0.151 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 2.1e+03 | raw_ttc_std 1.25e+04 | raw_drac_mean 0.0465
+    | raw_drac_std 0.125 | value_mean -0.000508 | ret_mean -0.791 | adv_mean -0.79
+    | explained_variance 0.000225
+i 0 | ii 26 | rollout_end_time 0.0222
+i 0 | ii 27 | rollout_time 0.616 | horizon 1e+03 | speed 1.22 | speed_rl 0.759
+    | speed_rl_std 0.325 | speed_human 1.69 | collisions 0 | collisions_human 0
+    | fuel 5.65e+05 | circumference 200 | beta 0
+i 0 | ii 27 | reward_mean 0.000681 | reward_std 0.00383 | speed_reward_mean 0.122
+    | speed_reward_std 0.102 | ssm_mean 0.332 | ssm_std 0.133 | ttc_mean 0.33
+    | ttc_std 0.13 | drac_mean -0.334 | drac_std 0.148 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.83e+03 | raw_ttc_std 1.7e+04 | raw_drac_mean 0.0451
+    | raw_drac_std 0.119 | value_mean -0.000433 | ret_mean -0.106 | adv_mean -0.105
+    | explained_variance 0.000215
+i 0 | ii 27 | rollout_end_time 0.0254
+i 0 | ii 28 | rollout_time 0.612 | horizon 1e+03 | speed 1.37 | speed_rl 0.907
+    | speed_rl_std 0.336 | speed_human 1.82 | collisions 0 | collisions_human 0
+    | fuel 5.82e+05 | circumference 200 | beta 0
+i 0 | ii 28 | reward_mean 0.00119 | reward_std 0.00351 | speed_reward_mean 0.137
+    | speed_reward_std 0.0925 | ssm_mean 0.346 | ssm_std 0.139 | ttc_mean 0.35
+    | ttc_std 0.137 | drac_mean -0.342 | drac_std 0.15 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 2.43e+03 | raw_ttc_std 1.58e+04 | raw_drac_mean 0.0464
+    | raw_drac_std 0.126 | value_mean -0.000417 | ret_mean 0.117 | adv_mean 0.118
+    | explained_variance 0.000132
+i 0 | ii 28 | rollout_end_time 0.0259
+i 0 | ii 29 | rollout_time 0.614 | horizon 1e+03 | speed 0.836 | speed_rl 0.374
+    | speed_rl_std 0.287 | speed_human 1.3 | collisions 0 | collisions_human 0
+    | fuel 7.06e+05 | circumference 200 | beta 0
+i 0 | ii 29 | reward_mean -0.000814 | reward_std 0.00396 | speed_reward_mean 0.0836
+    | speed_reward_std 0.106 | ssm_mean 0.338 | ssm_std 0.134 | ttc_mean 0.342
+    | ttc_std 0.135 | drac_mean -0.334 | drac_std 0.145 | pet_mean 0.999
+    | pet_std 0.016 | raw_ttc_mean 1.58e+03 | raw_ttc_std 5.38e+03
+    | raw_drac_mean 0.0471 | raw_drac_std 0.126 | value_mean -0.000525
+    | ret_mean -0.759 | adv_mean -0.758 | explained_variance 0.000257
+i 0 | ii 29 | rollout_end_time 0.0219
+i 0 | ii 30 | rollout_time 0.612 | horizon 1e+03 | speed 0.749 | speed_rl 0.285
+    | speed_rl_std 0.222 | speed_human 1.21 | collisions 0 | collisions_human 0
+    | fuel 7.52e+05 | circumference 200 | beta 0
+i 0 | ii 30 | reward_mean -0.00114 | reward_std 0.00456 | speed_reward_mean 0.0749
+    | speed_reward_std 0.121 | ssm_mean 0.339 | ssm_std 0.138 | ttc_mean 0.336
+    | ttc_std 0.134 | drac_mean -0.341 | drac_std 0.154 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.76e+03 | raw_ttc_std 6.71e+03 | raw_drac_mean 0.0454
+    | raw_drac_std 0.12 | value_mean -0.000497 | ret_mean -0.984 | adv_mean -0.984
+    | explained_variance 5.12e-05
+i 0 | ii 30 | rollout_end_time 0.0232
+i 0 | ii 31 | rollout_time 0.605 | horizon 1e+03 | speed 0.907 | speed_rl 0.444
+    | speed_rl_std 0.194 | speed_human 1.37 | collisions 0 | collisions_human 0
+    | fuel 6.56e+05 | circumference 200 | beta 0
+i 0 | ii 31 | reward_mean -0.000519 | reward_std 0.00426 | speed_reward_mean 0.0907
+    | speed_reward_std 0.112 | ssm_mean 0.329 | ssm_std 0.133 | ttc_mean 0.329
+    | ttc_std 0.131 | drac_mean -0.329 | drac_std 0.146 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 2.16e+03 | raw_ttc_std 1.34e+04 | raw_drac_mean 0.0451
+    | raw_drac_std 0.119 | value_mean -0.000478 | ret_mean -0.7 | adv_mean -0.699
+    | explained_variance 9.9e-05
+i 0 | ii 31 | rollout_end_time 0.0233
+i 0 | ii 32 | rollout_time 0.626 | horizon 1e+03 | speed 1.01 | speed_rl 0.552
+    | speed_rl_std 0.33 | speed_human 1.47 | collisions 0 | collisions_human 0
+    | fuel 6.55e+05 | circumference 200 | beta 0
+i 0 | ii 32 | reward_mean -8.75e-05 | reward_std 0.0037 | speed_reward_mean 0.101
+    | speed_reward_std 0.0962 | ssm_mean 0.347 | ssm_std 0.141 | ttc_mean 0.348
+    | ttc_std 0.139 | drac_mean -0.345 | drac_std 0.156 | pet_mean 0.995
+    | pet_std 0.0429 | raw_ttc_mean 4.04e+03 | raw_ttc_std 3.52e+04
+    | raw_drac_mean 0.0478 | raw_drac_std 0.129 | value_mean -0.000529
+    | ret_mean -0.324 | adv_mean -0.323 | explained_variance 0.000846
+i 0 | ii 32 | rollout_end_time 0.0229
+i 0 | ii 33 | rollout_time 0.624 | horizon 1e+03 | speed 0.884 | speed_rl 0.418
+    | speed_rl_std 0.363 | speed_human 1.35 | collisions 0 | collisions_human 0
+    | fuel 6.84e+05 | circumference 200 | beta 0
+i 0 | ii 33 | reward_mean -0.000601 | reward_std 0.00439 | speed_reward_mean 0.0884
+    | speed_reward_std 0.112 | ssm_mean 0.339 | ssm_std 0.139 | ttc_mean 0.334
+    | ttc_std 0.132 | drac_mean -0.345 | drac_std 0.158 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 2.21e+03 | raw_ttc_std 1.72e+04 | raw_drac_mean 0.0474
+    | raw_drac_std 0.127 | value_mean -0.000505 | ret_mean -0.768 | adv_mean -0.767
+    | explained_variance 0.000177
+i 0 | ii 33 | rollout_end_time 0.026
+i 0 | ii 34 | rollout_time 0.619 | horizon 1e+03 | speed 0.969 | speed_rl 0.504
+    | speed_rl_std 0.231 | speed_human 1.43 | collisions 0 | collisions_human 0
+    | fuel 6.24e+05 | circumference 200 | beta 0
+i 0 | ii 34 | reward_mean -0.000252 | reward_std 0.00408 | speed_reward_mean 0.0969
+    | speed_reward_std 0.104 | ssm_mean 0.329 | ssm_std 0.132 | ttc_mean 0.329
+    | ttc_std 0.132 | drac_mean -0.328 | drac_std 0.145 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.89e+03 | raw_ttc_std 1.05e+04 | raw_drac_mean 0.0473
+    | raw_drac_std 0.127 | value_mean -0.000492 | ret_mean -0.539 | adv_mean -0.539
+    | explained_variance 0.000303
+i 0 | ii 34 | rollout_end_time 0.0225
+i 0 | ii 35 | rollout_time 0.619 | horizon 1e+03 | speed 0.958 | speed_rl 0.503
+    | speed_rl_std 0.515 | speed_human 1.41 | collisions 0 | collisions_human 0
+    | fuel 7.33e+05 | circumference 200 | beta 0
+i 0 | ii 35 | reward_mean -0.000274 | reward_std 0.00431 | speed_reward_mean 0.0958
+    | speed_reward_std 0.108 | ssm_mean 0.345 | ssm_std 0.15 | ttc_mean 0.355
+    | ttc_std 0.151 | drac_mean -0.336 | drac_std 0.16 | pet_mean 0.999
+    | pet_std 0.0214 | raw_ttc_mean nan | raw_ttc_std nan | raw_drac_mean 0.0482
+    | raw_drac_std 0.13 | value_mean -0.000571 | ret_mean -0.327 | adv_mean -0.327
+    | explained_variance 0.00079
+i 0 | ii 35 | rollout_end_time 0.0244
+i 0 | ii 36 | rollout_time 0.713 | horizon 1e+03 | speed 0.693 | speed_rl 0.229
+    | speed_rl_std 0.179 | speed_human 1.16 | collisions 0 | collisions_human 0
+    | fuel 7.77e+05 | circumference 200 | beta 0
+i 0 | ii 36 | reward_mean -0.00134 | reward_std 0.00474 | speed_reward_mean 0.0693
+    | speed_reward_std 0.118 | ssm_mean 0.346 | ssm_std 0.142 | ttc_mean 0.342
+    | ttc_std 0.138 | drac_mean -0.349 | drac_std 0.157 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 2.69e+03 | raw_ttc_std 1.44e+04 | raw_drac_mean 0.0469
+    | raw_drac_std 0.126 | value_mean -0.000521 | ret_mean -1.04 | adv_mean -1.04
+    | explained_variance 0.000165
+i 0 | ii 36 | rollout_end_time 0.0226
+i 0 | ii 37 | rollout_time 0.598 | horizon 1e+03 | speed 0.865 | speed_rl 0.4
+    | speed_rl_std 0.228 | speed_human 1.33 | collisions 0 | collisions_human 0
+    | fuel 6.71e+05 | circumference 200 | beta 0
+i 0 | ii 37 | reward_mean -0.000624 | reward_std 0.0043 | speed_reward_mean 0.0865
+    | speed_reward_std 0.106 | ssm_mean 0.34 | ssm_std 0.153 | ttc_mean 0.339
+    | ttc_std 0.152 | drac_mean -0.34 | drac_std 0.165 | pet_mean 1 | pet_std 0.00464
+    | raw_ttc_mean nan | raw_ttc_std nan | raw_drac_mean 0.0475 | raw_drac_std 0.128
+    | value_mean -0.000517 | ret_mean -0.675 | adv_mean -0.675
+    | explained_variance 0.000443
+i 0 | ii 37 | rollout_end_time 0.0222
+i 0 | ii 38 | rollout_time 0.663 | horizon 1e+03 | speed 1.59 | speed_rl 1.13
+    | speed_rl_std 0.514 | speed_human 2.05 | collisions 0 | collisions_human 0
+    | fuel 5.58e+05 | circumference 200 | beta 0
+i 0 | ii 38 | reward_mean 0.00236 | reward_std 0.00376 | speed_reward_mean 0.159
+    | speed_reward_std 0.0916 | ssm_mean 0.346 | ssm_std 0.141 | ttc_mean 0.345
+    | ttc_std 0.136 | drac_mean -0.346 | drac_std 0.156 | pet_mean 1 | pet_std 0.00026
+    | raw_ttc_mean 2.18e+03 | raw_ttc_std 9.24e+03 | raw_drac_mean 0.0447
+    | raw_drac_std 0.117 | value_mean -0.0004 | ret_mean 0.688 | adv_mean 0.689
+    | explained_variance 0.00011
+i 0 | ii 38 | rollout_end_time 0.0222
+i 0 | ii 39 | rollout_time 0.647 | horizon 1e+03 | speed 0.751 | speed_rl 0.29
+    | speed_rl_std 0.306 | speed_human 1.21 | collisions 0 | collisions_human 0
+    | fuel 7.43e+05 | circumference 200 | beta 0
+i 0 | ii 39 | reward_mean -0.00111 | reward_std 0.00438 | speed_reward_mean 0.0751
+    | speed_reward_std 0.107 | ssm_mean 0.347 | ssm_std 0.14 | ttc_mean 0.355
+    | ttc_std 0.146 | drac_mean -0.34 | drac_std 0.148 | pet_mean 0.99
+    | pet_std 0.0614 | raw_ttc_mean 3.3e+03 | raw_ttc_std 1.38e+04
+    | raw_drac_mean 0.0489 | raw_drac_std 0.134 | value_mean -0.000695
+    | ret_mean -0.758 | adv_mean -0.757 | explained_variance 0.000684
+i 0 | ii 39 | rollout_end_time 0.0229
+i 0 | ii 40 | rollout_time 0.654 | horizon 1e+03 | speed 1.12 | speed_rl 0.658
+    | speed_rl_std 0.314 | speed_human 1.58 | collisions 0 | collisions_human 0
+    | fuel 5.91e+05 | circumference 200 | beta 0
+i 0 | ii 40 | reward_mean 0.000392 | reward_std 0.00379 | speed_reward_mean 0.112
+    | speed_reward_std 0.0922 | ssm_mean 0.343 | ssm_std 0.137 | ttc_mean 0.345
+    | ttc_std 0.135 | drac_mean -0.34 | drac_std 0.15 | pet_mean 0.998
+    | pet_std 0.0249 | raw_ttc_mean 2.22e+03 | raw_ttc_std 1.13e+04
+    | raw_drac_mean 0.0478 | raw_drac_std 0.13 | value_mean -0.000491
+    | ret_mean -0.178 | adv_mean -0.177 | explained_variance 0.000709
+i 0 | ii 40 | rollout_end_time 0.0228
+i 0 | ii 41 | rollout_time 0.619 | horizon 1e+03 | speed 0.989 | speed_rl 0.53
+    | speed_rl_std 0.437 | speed_human 1.45 | collisions 0 | collisions_human 0
+    | fuel 7e+05 | circumference 200 | beta 0
+i 0 | ii 41 | reward_mean -0.000138 | reward_std 0.0045 | speed_reward_mean 0.0989
+    | speed_reward_std 0.109 | ssm_mean 0.349 | ssm_std 0.141 | ttc_mean 0.353
+    | ttc_std 0.139 | drac_mean -0.344 | drac_std 0.154 | pet_mean 0.999
+    | pet_std 0.026 | raw_ttc_mean 4.1e+03 | raw_ttc_std 6.12e+04
+    | raw_drac_mean 0.0478 | raw_drac_std 0.129 | value_mean -0.00052
+    | ret_mean -0.328 | adv_mean -0.327 | explained_variance 0.000646
+i 0 | ii 41 | rollout_end_time 0.0229
+i 0 | ii 42 | rollout_time 0.699 | horizon 1e+03 | speed 0.833 | speed_rl 0.367
+    | speed_rl_std 0.297 | speed_human 1.3 | collisions 0 | collisions_human 0
+    | fuel 6.81e+05 | circumference 200 | beta 0
+i 0 | ii 42 | reward_mean -0.000794 | reward_std 0.00435 | speed_reward_mean 0.0833
+    | speed_reward_std 0.104 | ssm_mean 0.336 | ssm_std 0.139 | ttc_mean 0.339
+    | ttc_std 0.14 | drac_mean -0.332 | drac_std 0.151 | pet_mean 0.997
+    | pet_std 0.0317 | raw_ttc_mean 4.49e+03 | raw_ttc_std 6.81e+04
+    | raw_drac_mean 0.0472 | raw_drac_std 0.125 | value_mean -0.000561
+    | ret_mean -0.747 | adv_mean -0.746 | explained_variance 0.000632
+i 0 | ii 42 | rollout_end_time 0.0245
+i 0 | ii 43 | rollout_time 0.602 | horizon 1e+03 | speed 1.41 | speed_rl 0.951
+    | speed_rl_std 0.328 | speed_human 1.87 | collisions 0 | collisions_human 0
+    | fuel 5.47e+05 | circumference 200 | beta 0
+i 0 | ii 43 | reward_mean 0.00164 | reward_std 0.0044 | speed_reward_mean 0.141
+    | speed_reward_std 0.104 | ssm_mean 0.337 | ssm_std 0.138 | ttc_mean 0.339
+    | ttc_std 0.135 | drac_mean -0.335 | drac_std 0.152 | pet_mean 1 | pet_std 0
+    | raw_ttc_mean 1.73e+03 | raw_ttc_std 6.34e+03 | raw_drac_mean 0.0439
+    | raw_drac_std 0.113 | value_mean -0.000398 | ret_mean 0.158 | adv_mean 0.158
+    | explained_variance 8.34e-05
+i 0 | ii 43 | rollout_end_time 0.0233
+i 0 | ii 44 | rollout_time 0.6 | horizon 1e+03 | speed 1.21 | speed_rl 0.752
+    | speed_rl_std 0.52 | speed_human 1.67 | collisions 0 | collisions_human 0
+    | fuel 6.62e+05 | circumference 200 | beta 0
+i 0 | ii 44 | reward_mean 0.000777 | reward_std 0.00458 | speed_reward_mean 0.121
+    | speed_reward_std 0.109 | ssm_mean 0.335 | ssm_std 0.134 | ttc_mean 0.34
+    | ttc_std 0.133 | drac_mean -0.331 | drac_std 0.146 | pet_mean 1 | pet_std 0.00334
+    | raw_ttc_mean nan | raw_ttc_std nan | raw_drac_mean 0.0467 | raw_drac_std 0.123
+    | value_mean -0.00044 | ret_mean 0.0847 | adv_mean 0.0852
+    | explained_variance 0.000463
+i 0 | ii 44 | rollout_end_time 0.021
+Traceback (most recent call last):
+  File "/Users/xiawu/sumo_test/automatic_vehicular_control/ring.py", line 500, in <module>
+    c.run()  # Assuming the RingEnv class has a run method
+  File "/Users/xiawu/sumo_test/automatic_vehicular_control/exp.py", line 503, in run
+    c.train()
+  File "/Users/xiawu/sumo_test/automatic_vehicular_control/exp.py", line 424, in train
+    c._alg.optimize(rollouts)
+  File "/Users/xiawu/sumo_test/automatic_vehicular_control/ut.py", line 715, in optimize
+    c.log_stats(pd.DataFrame(batch_stats).mean(axis=0), ii=i_gd, n_ii=c.n_gds)
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/frame.py", line 11693, in mean
+    result = super().mean(axis, skipna, numeric_only, **kwargs)
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/generic.py", line 12420, in mean
+    return self._stat_function(
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/generic.py", line 12377, in _stat_function
+    return self._reduce(
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/frame.py", line 11562, in _reduce
+    res = df._mgr.reduce(blk_func)
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/internals/managers.py", line 1500, in reduce
+    nbs = blk.reduce(func)
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/internals/blocks.py", line 404, in reduce
+    result = func(self.values)
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/frame.py", line 11481, in blk_func
+    return op(values, axis=axis, skipna=skipna, **kwds)
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/nanops.py", line 147, in f
+    result = alt(values, axis=axis, skipna=skipna, **kwds)
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/nanops.py", line 404, in new_func
+    result = func(values, axis=axis, skipna=skipna, mask=mask, **kwargs)
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/nanops.py", line 720, in nanmean
+    the_sum = _ensure_numeric(the_sum)
+  File "/Users/xiawu/miniconda3/envs/sumo_py310/lib/python3.10/site-packages/pandas/core/nanops.py", line 1686, in _ensure_numeric
+    raise TypeError(f"Could not convert {x} to numeric")
+TypeError: Could not convert [array(1.20946269)] to numeric

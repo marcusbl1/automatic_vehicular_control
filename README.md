@@ -77,7 +77,7 @@ automatic_vehicular_control/
 ### 3.1 Training Command:
 ```
 python $F/ring.py $F/pareto/single_ring/seeding/beta1.0_SSM1_torch23558_np1409397498 \
-"worker_kwargs=[{'circumference': 250}]" "n_workers=1" "n_rollouts_per_step=45" \
+"av=1" "circumference=200" "n_workers=45" "n_rollouts_per_step=45" \
 "warmup_steps=2000" "skip_stat_steps=5000" "horizon=5000" "global_reward=True" "n_steps=400" \
 "alg='TRPO'" "use_critic=False" "gamma=0.9995" "beta=1.0" "scale_ttc=1" "scale_drac=1" \
 "seed_np=1409397498" "seed_torch=23558" "residual_transfer=False" "mrtl=False" \
@@ -87,7 +87,7 @@ python $F/ring.py $F/pareto/single_ring/seeding/beta1.0_SSM1_torch23558_np140939
 #### Explanation of Arguments:
 - **$F/ring.py**: Path to the main running script.
 - **pareto/single_ring/seeding/beta1.0_SSM1_torch23558_np1409397498**: Output directory for storing results.
-- **worker_kwargs**: Configuration details for workers, e.g., setting the circumference of the ring.
+- **worker_kwargs**: Configuration details for workers
 - **n_workers**: Number of workers to use in parallel for rollouts.  
 - **n_rollouts_per_step**: Number of rollouts per training step.  
 - **warmup_steps**: Number of warmup steps before training begins.  
@@ -136,15 +136,16 @@ python $F/ring.py . "e=True" "warmup_steps=2000" "skip_stat_steps=5000" \
 - **save_agent**: Whether to save the agent's information (`True` or `False`).
 
 
-### 3.3 Different veh number without RL, aka only human driving cars
+### 3.3 Running IDM without RL 
 ```
-python $F/ring_different_veh_no_RL.py  $F/pareto/single_ring/different_veh \
-"worker_kwargs=[{'circumference': 200}]" "n_workers=1" "n_rollouts_per_step=45" \
-"warmup_steps=0" "skip_stat_steps=0" "horizon=3000" "global_reward=True" "n_steps=100" \
+python $F/ring.py $F/pareto/single_ring/IDM/different_veh \
+"av=0" "circumference=200" "n_workers=45" "n_rollouts_per_step=45" \
+"warmup_steps=2000" "skip_stat_steps=5000" "horizon=5000" "global_reward=True" "n_steps=400" \
 "alg='TRPO'" "use_critic=False" "gamma=0.9995" "beta=1.0" "scale_ttc=1" "scale_drac=1" \
 "seed_np=1409397498" "seed_torch=23558" "residual_transfer=False" "mrtl=False" \
-"handcraft=False" "step_save=False" "lr=0.0001" "wb=False" "tb=False" \
-2>&1 | tee $F/logs/log_3.txt
+"handcraft=False" "step_save=False" "lr=0.0001" "wb=False" "tb=False" 
+
+- **av**: set to 0.
 
 ```
 
@@ -160,7 +161,7 @@ sbatch eval_commands.sh
 ```
 
 ## 4. TODO
-
+1. IDM debug finished, check the RL bugs
 2. Test batch running and check if the plot is right: Training with 50 veh one lane of 1000m on Super Cloud. 
 3. Try different veh number under the scenarios of w or w/o RL and compare if the fundamental diagram get improved Super Cloud.
 

@@ -1,0 +1,24 @@
+alg: TRPO
+beta: 1.0
+gamma: 0.9995
+global_reward: true
+handcraft: false
+horizon: 3000
+lr: 0.0001
+mrtl: false
+n_rollouts_per_step: 45
+n_steps: 100
+n_workers: 1
+residual_transfer: false
+scale_drac: 1
+scale_ttc: 1
+seed_np: 1409397498
+seed_torch: 23558
+skip_stat_steps: 0
+step_save: false
+tb: false
+use_critic: false
+warmup_steps: 0
+wb: false
+worker_kwargs:
+- circumference: 200

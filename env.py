@@ -724,11 +724,9 @@ class TrafficState:
         self.external_lanes = Container((k, v) for k, v in lanes.items() if not k.startswith(':'))
 
         segments = {}
-        
         def add_from_to(from_, to):
             from_.tos.add(to)
             to.froms.add(from_)
-            
         for con in map(values_str_to_val, net.children('connection')):
             from_lane = edges[con['from']].lanes[int(con.fromLane)]
             to_lane = edges[con.to].lanes[int(con.toLane)]
@@ -852,15 +850,12 @@ class TrafficState:
         subscribes.sim = SubscribeDef(tc.simulation, [
             V.departed_vehicles_ids, V.arrived_vehicles_ids,
             V.colliding_vehicles_ids, V.loaded_vehicles_ids]).subscribe()
-        
         subscribes.tl = SubscribeDef(tc.trafficlight, [
             TL.red_yellow_green_state])
-        
         subscribes.veh = SubscribeDef(tc.vehicle, [
             V.road_id, V.lane_index, V.laneposition,
             V.speed, V.position, V.angle,
             V.fuelconsumption, V.noxemission])
-        
         for tl_id in self.traffic_lights.keys():
             subscribes.tl.subscribe(tl_id)
 
@@ -893,109 +888,90 @@ class TrafficState:
 
     def step(self):
         """
-        Take a simulation step and update state.
+        Take a simulation step and update state
         """
-        c = self.c  # Configuration object for the simulation
-        tc = self.tc  # TraCI instance for interacting with SUMO simulation
-        subscribes = self.subscribes  # Subscription definitions to get simulation data
+        c = self.c
+        tc = self.tc
+        subscribes = self.subscribes
 
         # Actual SUMO step
-        tc.simulationStep()  # Advances the SUMO simulation by one step
-        sim_res = subscribes.sim.get()  # Retrieve updated subscription results for this step
+        tc.simulationStep()
+        sim_res = subscribes.sim.get()
 
-        # Clear references to current vehicle edges and lanes for the next update
         for veh in self.vehicles:
-            veh.unvar('edge', 'lane')  # Remove 'edge' and 'lane' properties from vehicles (to update them later)
-
-        # Clear current vehicle data from edges and lanes
+            veh.unvar('edge', 'lane')
         for ent in itertools.chain(self.edges, self.lanes):
-            ent.vehicles.clear()  # Clear vehicles list on each edge/lane
-            ent.positions.clear()  # Clear vehicle positions
+            ent.vehicles.clear()
+            ent.positions.clear()
 
-        # Update traffic light states
         for tl_id, tl in self.traffic_lights.items():
-            tl.update(subscribes.tl.get(tl_id))  # Get traffic light states and update each traffic light object
+            tl.update(subscribes.tl.get(tl_id))
 
-        # Handle loaded vehicles (those waiting to be inserted into the simulation)
         for veh_id in sim_res.loaded_vehicles_ids:
-            flow_id, _ = veh_id.rsplit('.')  # Extract the flow identifier from the vehicle ID
-            flow = self.flows[flow_id]  # Get the corresponding flow object
-            flow.backlog.add(veh_id)  # Add vehicle ID to backlog
+            flow_id, _ = veh_id.rsplit('.')
+            flow = self.flows[flow_id]
+            flow.backlog.add(veh_id)
 
-        # Initialize a set for newly departed vehicles
         self.new_departed = set()
-
-        # Handle vehicles that have departed (entered the network)
-        for veh_id in sim_res.departed_vehicles_ids:
-            subscribes.veh.subscribe(veh_id)  # Subscribe to updates for the vehicle's state
-            type_id = tc.vehicle.getTypeID(veh_id)  # Get vehicle type
-            # If vehicle type is 'generic', compute specific type
+        # add vehicles
+        for veh_id in sim_res.departed_vehicles_ids: 
+            subscribes.veh.subscribe(veh_id)
+            type_id = tc.vehicle.getTypeID(veh_id)
+            # import pdb; pdb.set_trace()
             if type_id == 'generic':
                 type_id = self.compute_type(veh_id)
-            type_ = self.types[type_id]  # Get vehicle type object
-            route = self.routes[tc.vehicle.getRouteID(veh_id)]  # Get route object for the vehicle
-            length = tc.vehicle.getLength(veh_id)  # Get vehicle length
-            road_id = tc.vehicle.getRoadID(veh_id)  # Get current road ID for the vehicle
+            type_ = self.types[type_id]
+            route = self.routes[tc.vehicle.getRouteID(veh_id)]
+            length = tc.vehicle.getLength(veh_id)
+            road_id = tc.vehicle.getRoadID(veh_id)
+            self.vehicles[veh_id] = veh = Vehicle(id=veh_id, type=type_, route=route, length=length, road_id=road_id)
+            type_.vehicles.add(veh)
 
-            # Create a new vehicle object and add it to the list of vehicles
-            self.vehicles[veh_id] = veh = Vehicle(
-                id=veh_id, type=type_, route=route, length=length, road_id=road_id
-            )
-            type_.vehicles.add(veh)  # Add vehicle to its type's list of vehicles
-
-            # Set color if rendering is enabled
             if c.render:
                 color_fn = c.get('color_fn', lambda veh: RED if 'rl' in type_.id else WHITE)
-                self.set_color(veh, color_fn(veh))  # Set vehicle color based on whether it is RL-controlled or not
+                self.set_color(veh, color_fn(veh))
 
-            # Set vehicle speed mode and lane change mode using SUMO settings
             tc.vehicle.setSpeedMode(veh_id, c.get('speed_mode', SPEED_MODE.all_checks))
             tc.vehicle.setLaneChangeMode(veh_id, c.get('lc_mode', LC_MODE.no_lat_collide))
-
-            # Add to new_departed set
             self.new_departed.add(veh)
-
-            # Remove vehicle from backlog if necessary
             if '.' in veh_id:
                 flow_id, _ = veh_id.rsplit('.')
                 if flow_id in self.flows:
                     flow = self.flows[flow_id]
                     flow.backlog.remove(veh_id)
 
-        # Handle newly arrived and collided vehicles
         self.new_arrived = {self.vehicles[veh_id] for veh_id in sim_res.arrived_vehicles_ids}
         self.new_collided = {self.vehicles[veh_id] for veh_id in sim_res.colliding_vehicles_ids}
-        
-        # Remove newly arrived vehicles from tracking if they collided
         for veh in self.new_arrived:
-            veh.type.vehicles.remove(self.vehicles.pop(veh.id))  # Remove vehicle from its type's list of vehicles
-        self.new_arrived -= self.new_collided  # Do not count collided vehicles as "arrived"
+            veh.type.vehicles.remove(self.vehicles.pop(veh.id))
+        self.new_arrived -= self.new_collided # Don't count collided vehicles as "arrived"
 
-        # Update vehicle positions on edges and lanes
         for veh_id, veh in self.vehicles.items():
-            veh.prev_speed = veh.get('speed', None)  # Store previous speed for later comparisons
-            veh.update(subscribes.veh.get(veh_id))  # Update vehicle attributes from SUMO data
+            veh.prev_speed = veh.get('speed', None)
+            veh.update(subscribes.veh.get(veh_id))
             if veh_id not in sim_res.colliding_vehicles_ids:
-                edge = self.edges[veh.road_id]  # Get the edge where the vehicle is located
-                edge.vehicles.append(veh)  # Add vehicle to the edge's list of vehicles
-                veh.edge = edge  # Set vehicle's edge attribute
+                edge = self.edges[veh.road_id]
+                edge.vehicles.append(veh)
+                veh.edge = edge
+            # veh.road_id=tc.vehicle.getRoadID(veh_id)          # i added this line only
+            # edge = self.edges[veh.road_id]
+            # edge.vehicles.append(veh)
+            # veh.edge = edge
 
-        # Update vehicle sorting and lane positions
         for edge in self.edges:
-            edge.vehicles.sort(key=lambda veh: veh.laneposition)  # Sort vehicles based on position on the lane
-            edge.positions = [veh.laneposition for veh in edge.vehicles]  # Store vehicle positions on this edge
+            edge.vehicles.sort(key=lambda veh: veh.laneposition)
+            edge.positions = [veh.laneposition for veh in edge.vehicles]
             for edge_i, veh in enumerate(edge.vehicles):
-                veh.edge_i = edge_i  # Set the vehicle's index within the edge's vehicle list
-                veh.lane = lane = edge.lanes[veh.lane_index]  # Set the lane object where the vehicle is located
-                veh.lane_i = len(lane.vehicles)  # Set the vehicle's index in the lane's list of vehicles
-                lane.vehicles.append(veh)  # Add vehicle to the lane's list of vehicles
-                lane.positions.append(veh.laneposition)  # Add vehicle position to the lane
+                veh.edge_i = edge_i
+                veh.lane = lane = edge.lanes[veh.lane_index]
+                veh.lane_i = len(lane.vehicles)
+                lane.vehicles.append(veh)
+                lane.positions.append(veh.laneposition)
 
-        # Record sets of vehicles that have arrived, departed, or collided during this step
         self.all_arrived.append(self.new_arrived)
         self.all_departed.append(self.new_departed)
         self.all_collided.append(self.new_collided)
-            
+
     def reset(self, tc):
         self.tc = tc
         self.subscribes.clear()
@@ -1068,7 +1044,6 @@ class Env:
     """
     Offers a similar reinforcement learning environment interface as gym.Env
     Wraps around a TrafficState (ts) and the SUMO traci (tc)
-    c: Ring class
     """
     def __init__(self, c):
         self.c = c.setdefaults(redef_sumo=False, warmup_steps=0, skip_stat_steps=0, skip_vehicle_info_stat_steps=True)
@@ -1082,7 +1057,6 @@ class Env:
             if c.get('save_agent'):
                 self._agent_info = []
         self._step = 0
-        self.mean_speed = 0
 
     def def_sumo(self, *args, **kwargs):
         """ Override this with code defining the SUMO network """
@@ -1112,27 +1086,6 @@ class Env:
         if self._vehicle_info is not None:
             self.extend_vehicle_info()
         self._step += 1
-        self.mean_speed = np.mean([v.speed for v in self.ts.vehicles])
-        return c.observation_space.low, 0, False, None
-    
-    
-    def step_2(self, *args):
-        """
-            Override this with additional code which applies acceleration and measures observation and reward
-        """
-        c, ts = self.c, self.ts
-        if c.get('custom_idm'):
-            idm = c.custom_idm
-            for veh in ts.types.human.vehicles:
-                leader, headway = veh.leader()
-                v = veh.speed
-                s_star = 0 if leader is None else idm.minGap + max(0, v * idm.tau + v * (v - leader.speed) / (2 * np.sqrt(idm.accel * idm.decel)))
-                a = idm.accel * (1 - (v / idm.maxSpeed) ** idm.delta - (s_star / (headway - leader.length)) ** 2)
-                noise = np.random.normal(0, idm.sigma)
-                ts.accel(veh, a + noise)
-        self.ts.step()
-        self._step += 1
-        self.mean_speed = np.mean([v.speed for v in self.ts.vehicles])
         return c.observation_space.low, 0, False, None
 
     def init_vehicles(self):
@@ -1142,91 +1095,51 @@ class Env:
         """
         return True
 
-   # Method to reset or initialize the SUMO traffic simulation environment
     def reset_sumo(self):
-        # Shortcuts for configuration and SUMO definition objects
         c = self.c
         sumo_def = self.sumo_def
-        
-        # Determine if new SUMO definitions need to be generated
-        generate_def = c.redef_sumo or not sumo_def.sumo_cmd  # Either forced redefinition or missing SUMO command
-        
+
+        generate_def = c.redef_sumo or not sumo_def.sumo_cmd
         if generate_def:
-            # Generate new definitions if necessary
-            kwargs = self.def_sumo()  # Obtain default arguments for SUMO setup
-            kwargs['net'] = sumo_def.generate_net(**kwargs)  # Generate the network using SUMO
-            sumo_def.sumo_cmd = sumo_def.generate_sumo(**kwargs)  # Generate the SUMO command using the arguments
-        
-        # Start SUMO with the current traffic controller (tc)
+            kwargs = self.def_sumo()
+            kwargs['net'] = sumo_def.generate_net(**kwargs)
+            sumo_def.sumo_cmd = sumo_def.generate_sumo(**kwargs)
         self.tc = sumo_def.start_sumo(self.tc)
-        
         if generate_def:
-            # If new definitions were generated, store relevant SUMO file paths
             self.sumo_paths = {k: p for k, p in kwargs.items() if k in SumoDef.file_args}
-            
-            # Load SUMO definitions from the generated file paths and initialize the traffic state
             defs = {k: E.from_path(p) for k, p in self.sumo_paths.items()}
-            self.ts = TrafficState(c, self.tc, **defs)  # Create a new TrafficState object with the definitions
+            self.ts = TrafficState(c, self.tc, **defs)
         else:
-            # If not generating new definitions, simply reset the existing traffic state
             self.ts.reset(self.tc)
-        
-        # Set up the traffic state (e.g., initialize the simulation settings)
         self.ts.setup()
-        
-        # Initialize the vehicles in the simulation (e.g., placing vehicles on the network)
         success = self.init_vehicles()
-        
-        # Return whether the SUMO reset and vehicle initialization were successful
         return success
 
-    # Method to initialize the environment after SUMO reset
     def init_env(self):
-        # Reference to the traffic state
         ts = self.ts
-    
-        # Create an empty data structure to store rollout information
         self.rollout_info = NamedArrays()
-        
-        # Turn off all traffic lights in the network
         for tl in ts.traffic_lights:
-            ts.set_program(tl, 'off')  # Set the traffic light program to 'off'
-        
-        # Reset the step counter to 0
+            ts.set_program(tl, 'off')
         self._step = 0
-        
-        # Take the first step in the simulation
         ret = self.step()
-        
-        # Run the simulation for a number of warmup steps
         for _ in range(self.c.warmup_steps):
-            ret = self.step()  # Advance the simulation one step
-            
-            # If the simulation ends during the warmup phase, return None to indicate failure
+            ret = self.step()
             if ret[2] if isinstance(ret, tuple) else ret.get('done'):
                 return None
-        
-        # After warmup, turn traffic lights back on (set to a defined program '1')
         for tl in ts.traffic_lights:
-            ts.set_program(tl, '1')  # Set traffic light program to '1' (likely normal operation)
-        
-        # Return the observation from the step, either as the first element of a tuple or a filtered dictionary
+            ts.set_program(tl, '1')
         if isinstance(ret, tuple):
-            return ret[0]  # If the result is a tuple, return the first element (likely the observation)
-        return {k: v for k, v in ret.items() if k in ['obs', 'id']}  # Otherwise, return a dictionary with 'obs' and 'id'
-        
-    # Reset the entire environment, retrying until successful
-    def reset(self):
-        self.mean_speed = 0
-        while True:  # Infinite loop until the environment is successfully reset
-            # Attempt to reset the SUMO simulation
-            if not self.reset_sumo():
-                continue  # If reset_sumo fails, retry the loop
-            
-            # Initialize the environment. If initialization is successful (obs is not None), return the observation
-            if (obs := self.init_env()) is not None:
-                return obs  # Successfully initialized, return the observation
+            return ret[0]
+        return {k: v for k, v in ret.items() if k in ['obs', 'id']}
 
+    def reset(self):
+        while True:
+            if not self.reset_sumo():
+                continue
+            if (obs := self.init_env()) is not None:
+                if len(self.ts.vehicles) != self.c.n_veh:
+                    print('Bad initialization occurred, fix the initialization function for c.n_veh ', self.c.n_veh, "actually veh num ", len(self.ts.vehicles))
+                return obs
 
     def append_step_info(self):
         """
@@ -1321,8 +1234,6 @@ class Env:
 class NormEnv(gym.Env):
     """
     Reward normalization with running average https://github.com/joschu/modular_rl
-    self.c: Ring parameters 
-    self.env: RingEnv class
     """
     def __init__(self, c, env):
         self.c = c.setdefaults(norm_obs=False, norm_reward=False, center_reward=False, reward_clip=np.inf, obs_clip=np.inf)
