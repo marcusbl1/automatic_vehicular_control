@@ -501,6 +501,3 @@ if __name__ == '__main__':
         else:
             c.run_2()
         print(f"Simulation with {n_veh} vehicles completed")
-
-
-
