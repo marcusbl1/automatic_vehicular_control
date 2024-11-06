@@ -43,7 +43,7 @@ class RingEnv(Env):
                 'shape': get_shape(np.pi / 2, np.pi * 3 / 2),
                 'numLanes': c.n_lanes
             }),
-        )
+        )   
 
         connections = E('connections',
             # Create lane connections from 'left' to 'right' and vice versa for all lanes
